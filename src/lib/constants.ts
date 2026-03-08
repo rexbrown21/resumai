@@ -10,15 +10,16 @@ export const COLORS = {
   textDim: "#999",
   danger: "#ff4757",
   success: "#2ed573",
-} as const;
+};
 
 export const RESUME_TYPES = ["Technical", "Managerial", "Consulting", "Research", "General"] as const;
+
 export const APP_STATUSES = ["Saved", "Applied", "Interview", "Offer", "Rejected"] as const;
 
 export const STATUS_COLORS: Record<string, string> = {
   Applied: "#60a5fa",
-  Interview: COLORS.success,
-  Offer: COLORS.accent,
-  Rejected: COLORS.danger,
-  Saved: COLORS.textMuted,
+  Interview: "#2ed573",
+  Offer: "#e8ff47",
+  Rejected: "#ff4757",
+  Saved: "#666",
 };

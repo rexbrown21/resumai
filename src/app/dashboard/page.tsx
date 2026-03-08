@@ -1,7 +1,4 @@
 "use client";
-
-export const dynamic = "force-dynamic";
-
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
