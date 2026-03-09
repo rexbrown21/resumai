@@ -2,10 +2,17 @@
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
+import { supabase } from "@/lib/supabase";
 
 export default function Dashboard() {
   const router = useRouter();
-  const { user, resumes, applications } = useApp();
+  const { user, setUser, resumes, applications } = useApp();
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    window.location.href = "/";
+  };
 
   const stats = [
     { label: "Resumes stored", value: resumes.length, color: COLORS.accent },
@@ -22,14 +29,22 @@ export default function Dashboard() {
   return (
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
       <div style={{ marginBottom: 48 }}>
-        <div className="tag" style={{ marginBottom: 16 }}>Dashboard</div>
-        <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
-          Good morning,{" "}
-          <span style={{ color: COLORS.accent }}>{user?.name || "there"}</span>
-        </h1>
-        <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, marginTop: 8 }}>
-          {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
-        </p>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+          <div>
+            <div className="tag" style={{ marginBottom: 16 }}>Dashboard</div>
+            <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
+              Good morning,{" "}
+              <span style={{ color: COLORS.accent }}>{user?.name || "there"}</span>
+            </h1>
+            <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, marginTop: 8 }}>
+              {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
+            </p>
+          </div>
+          <button onClick={handleLogout} className="btn-ghost"
+            style={{ padding: "8px 20px", borderRadius: 2, fontSize: 12, color: "var(--danger)", borderColor: "var(--danger)", marginTop: 8 }}>
+            Logout
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
@@ -43,7 +58,6 @@ export default function Dashboard() {
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 2, marginTop: 2 }}>
-        {/* CTA card */}
         <div className="card" style={{ padding: "40px" }}>
           <div className="tag" style={{ marginBottom: 20 }}>Quick action</div>
           <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12, color: COLORS.text }}>
@@ -59,7 +73,6 @@ export default function Dashboard() {
           </button>
         </div>
 
-        {/* Resume vault preview */}
         <div className="card" style={{ padding: "40px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
             <div className="tag" style={{ marginBottom: 20 }}>Resume vault</div>
@@ -85,7 +98,6 @@ export default function Dashboard() {
         </div>
       </div>
 
-      {/* Recent applications */}
       {applications.length > 0 && (
         <div className="card" style={{ padding: "40px", marginTop: 2 }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
@@ -101,10 +113,7 @@ export default function Dashboard() {
                 justifyContent: "space-between",
               }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-                  <div style={{
-                    width: 8, height: 8, borderRadius: "50%",
-                    background: statusColors[app.status] || COLORS.textMuted,
-                  }} />
+                  <div style={{ width: 8, height: 8, borderRadius: "50%", background: statusColors[app.status] || COLORS.textMuted }} />
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: COLORS.text }}>{app.company}</div>
                     <div className="mono" style={{ fontSize: 12, color: COLORS.textMuted }}>{app.role}</div>
