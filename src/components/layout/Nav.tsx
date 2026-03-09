@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useApp } from "@/lib/store";
+import { supabase } from "@/lib/supabase";
 
 export default function Nav() {
   const { user, setUser } = useApp();
@@ -53,7 +54,7 @@ export default function Nav() {
           ))}
           <div style={{ width: 1, height: 20, background: "var(--border)", margin: "0 8px" }} />
           <div
-            onClick={() => { setUser(null); window.location.href = "/"; }}
+            onClick={async () => { await supabase.auth.signOut(); setUser(null); window.location.href = "/"; }}
             style={{
               width: 32, height: 32, borderRadius: "50%",
               background: "rgba(232,255,71,0.1)",
