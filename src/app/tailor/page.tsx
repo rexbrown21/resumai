@@ -11,34 +11,54 @@ export default function Tailor() {
   const [jobDesc, setJobDesc] = useState("");
   const [company, setCompany] = useState("");
   const [role, setRole] = useState("");
+  const [resumeText, setResumeText] = useState("");
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
   const [step, setStep] = useState<Step>("input");
-  const [result, setResult] = useState<TailorResult | null>(null);
+  const [result, setResult] = useState<TailorResult & { tailoredResume?: string } | null>(null);
+  const [error, setError] = useState("");
 
   const analyze = async () => {
     if (!jobDesc) return;
+    if (!resumeText) { setError("Please paste your resume text below."); return; }
+    setError("");
     setStep("analyzing");
-    // TODO: replace with real API call to /api/tailor
-    await new Promise(r => setTimeout(r, 2800));
-    const types = ["Technical", "Managerial", "Consulting", "Research"] as const;
-    const detectedType = types[Math.floor(Math.random() * types.length)];
-    const bestFit = resumes.find(r => r.type === detectedType) || resumes[0];
-    if (bestFit) setSelectedResume(bestFit);
-    setResult({
-      jobType: detectedType,
-      matchScore: 78 + Math.floor(Math.random() * 18),
-      keywords: ["Python", "Machine Learning", "API Design", "Team Lead", "Agile"].slice(0, 3 + Math.floor(Math.random() * 2)),
-      suggestions: [
-        "Moved ML experience to top of Skills section",
-        "Added 'cross-functional collaboration' to Work Experience #1",
-        "Reframed capstone project to align with role requirements",
-      ],
-    });
-    setStep("result");
+
+    try {
+      const res = await fetch("/api/tailor", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobDescription: jobDesc,
+          resumeText,
+          resumeName: selectedResume?.name || "Resume",
+        }),
+      });
+
+      if (!res.ok) throw new Error("API call failed");
+
+      const data = await res.json();
+      setResult(data);
+      setStep("result");
+    } catch (err) {
+      setError("Something went wrong. Please try again.");
+      setStep("input");
+    }
+  };
+
+  const downloadResume = () => {
+    if (!result?.tailoredResume) return;
+    const blob = new Blob([result.tailoredResume], { type: "text/plain" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${selectedResume?.name || "resume"}-tailored.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const logApplication = () => {
     if (!result) return;
+    downloadResume();
     addApplication({
       id: Date.now(),
       company: company || "Unnamed Company",
@@ -50,7 +70,8 @@ export default function Tailor() {
       notes: "",
     });
     setStep("input");
-    setJobDesc(""); setCompany(""); setRole(""); setResult(null); setSelectedResume(null);
+    setJobDesc(""); setCompany(""); setRole("");
+    setResult(null); setSelectedResume(null); setResumeText("");
   };
 
   return (
@@ -61,65 +82,79 @@ export default function Tailor() {
       </h1>
 
       {step === "input" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div className="card" style={{ padding: "32px" }}>
-              <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
-              <input placeholder="Company name" value={company}
-                onChange={e => setCompany(e.target.value)}
-                style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
-              <input placeholder="Role title" value={role}
-                onChange={e => setRole(e.target.value)}
-                style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
+        <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <div className="card" style={{ padding: "32px" }}>
+                <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
+                <input placeholder="Company name" value={company}
+                  onChange={e => setCompany(e.target.value)}
+                  style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
+                <input placeholder="Role title" value={role}
+                  onChange={e => setRole(e.target.value)}
+                  style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
+              </div>
+              <div className="card" style={{ padding: "32px", flex: 1 }}>
+                <div className="tag" style={{ marginBottom: 16 }}>Job description</div>
+                <textarea
+                  placeholder="Paste the full job description here..."
+                  value={jobDesc} onChange={e => setJobDesc(e.target.value)}
+                  style={{
+                    width: "100%", height: 280, padding: "14px 16px", borderRadius: 2,
+                    fontSize: 13, lineHeight: 1.7, resize: "none",
+                    fontFamily: "'DM Mono', monospace",
+                  }} />
+              </div>
             </div>
-            <div className="card" style={{ padding: "32px", flex: 1 }}>
-              <div className="tag" style={{ marginBottom: 16 }}>Job description</div>
-              <textarea
-                placeholder="Paste the full job description here..."
-                value={jobDesc} onChange={e => setJobDesc(e.target.value)}
-                style={{
-                  width: "100%", height: 280, padding: "14px 16px", borderRadius: 2,
-                  fontSize: 13, lineHeight: 1.7, resize: "none",
-                  fontFamily: "'DM Mono', monospace",
-                }} />
+
+            <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <div className="card" style={{ padding: "32px" }}>
+                <div className="tag" style={{ marginBottom: 20 }}>Select base resume</div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {resumes.length === 0 ? (
+                    <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
+                      No resumes added yet.
+                    </p>
+                  ) : resumes.map(r => (
+                    <div key={r.id} onClick={() => setSelectedResume(r)} style={{
+                      padding: "14px 18px",
+                      border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
+                      background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "#0a0a0a",
+                      cursor: "pointer", transition: "all 0.2s",
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                    }}>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
+                      <span className="tag">{r.type}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              <button className="btn-primary" onClick={analyze} disabled={!jobDesc || !resumeText}
+                style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
+                Analyze & tailor →
+              </button>
             </div>
           </div>
 
-          <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-            <div className="card" style={{ padding: "32px" }}>
-              <div className="tag" style={{ marginBottom: 20 }}>Select base resume</div>
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                {resumes.length === 0 ? (
-                  <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
-                    No resumes uploaded yet.
-                  </p>
-                ) : resumes.map(r => (
-                  <div key={r.id} onClick={() => setSelectedResume(r)} style={{
-                    padding: "14px 18px",
-                    border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
-                    background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "#0a0a0a",
-                    cursor: "pointer", transition: "all 0.2s",
-                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                  }}>
-                    <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
-                    <span className="tag">{r.type}</span>
-                  </div>
-                ))}
-              </div>
-              <div style={{ marginTop: 16, padding: "14px 18px", border: `1px solid ${COLORS.border}`, background: "#0a0a0a" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                  <div style={{ width: 6, height: 6, borderRadius: "50%", background: COLORS.accent, animation: "pulse 2s infinite" }} />
-                  <span className="mono" style={{ fontSize: 12, color: COLORS.textDim }}>
-                    Or let AI auto-select the best fit
-                  </span>
-                </div>
-              </div>
-            </div>
-            <button className="btn-primary" onClick={analyze} disabled={!jobDesc}
-              style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
-              Analyze & tailor →
-            </button>
+          {/* Resume text input */}
+          <div className="card" style={{ padding: "32px" }}>
+            <div className="tag" style={{ marginBottom: 16 }}>Your resume text</div>
+            <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, marginBottom: 12 }}>
+              Paste the full text of your resume here — the AI will read and rewrite it.
+            </p>
+            <textarea
+              placeholder="Paste your full resume text here..."
+              value={resumeText} onChange={e => setResumeText(e.target.value)}
+              style={{
+                width: "100%", height: 200, padding: "14px 16px", borderRadius: 2,
+                fontSize: 13, lineHeight: 1.7, resize: "none",
+                fontFamily: "'DM Mono', monospace",
+              }} />
           </div>
+
+          {error && (
+            <p className="mono" style={{ color: COLORS.danger, fontSize: 13 }}>{error}</p>
+          )}
         </div>
       )}
 
@@ -170,7 +205,7 @@ export default function Tailor() {
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2, marginBottom: 2 }}>
             <div className="card" style={{ padding: "32px" }}>
               <div className="tag" style={{ marginBottom: 20 }}>What AI changed</div>
               <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
@@ -190,7 +225,7 @@ export default function Tailor() {
             <div className="card" style={{ padding: "32px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
               <div>
                 <div className="tag" style={{ marginBottom: 20 }}>Resume used</div>
-                <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: COLORS.text }}>{selectedResume?.name}</div>
+                <div style={{ fontSize: 20, fontWeight: 700, marginBottom: 8, color: COLORS.text }}>{selectedResume?.name || "Auto-selected"}</div>
                 <div className="mono" style={{ color: COLORS.textDim, fontSize: 13 }}>
                   Type: {selectedResume?.type} · Tailored for {company || "this role"}
                 </div>
@@ -205,6 +240,20 @@ export default function Tailor() {
               </div>
             </div>
           </div>
+
+          {/* Tailored resume preview */}
+          {result.tailoredResume && (
+            <div className="card" style={{ padding: "32px" }}>
+              <div className="tag" style={{ marginBottom: 20 }}>Tailored resume preview</div>
+              <pre style={{
+                fontFamily: "'DM Mono', monospace", fontSize: 12,
+                color: COLORS.textDim, lineHeight: 1.8,
+                whiteSpace: "pre-wrap", wordBreak: "break-word",
+              }}>
+                {result.tailoredResume}
+              </pre>
+            </div>
+          )}
         </div>
       )}
     </div>
