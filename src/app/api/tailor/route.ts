@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
         "X-Title": "ResumAI",
       },
       body: JSON.stringify({
-        model: "anthropic/claude-3-haiku",
+        model: "meta-llama/llama-3.1-8b-instruct:free",
         messages: [
           {
             role: "system",
