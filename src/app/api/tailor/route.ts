@@ -11,10 +11,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const apiKey = process.env.OPENROUTER_API_KEY;
+    console.log("API Key exists:", !!apiKey);
+    console.log("API Key length:", apiKey?.length);
+
     const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+        "Authorization": `Bearer ${apiKey}`,
         "Content-Type": "application/json",
         "HTTP-Referer": "https://resumai-eta.vercel.app",
         "X-Title": "ResumAI",
@@ -68,7 +72,6 @@ ${resumeText}`
     const data = await response.json();
     const text = data.choices[0].message.content;
 
-    // Clean and parse JSON
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
