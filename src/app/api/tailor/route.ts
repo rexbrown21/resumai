@@ -1,4 +1,9 @@
+import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 export async function POST(req: NextRequest) {
   try {
@@ -11,24 +16,12 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const apiKey = process.env.OPENROUTER_API_KEY;
-    console.log("API Key exists:", !!apiKey);
-    console.log("API Key length:", apiKey?.length);
-
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-        "HTTP-Referer": "https://resumai-eta.vercel.app",
-        "X-Title": "ResumAI",
-      },
-      body: JSON.stringify({
-        model: "meta-llama/llama-3.1-8b-instruct:free",
-        messages: [
-          {
-            role: "system",
-            content: `You are an expert resume writer and career coach. Your job is to tailor resumes to match specific job descriptions.
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: `You are an expert resume writer and career coach. Your job is to tailor resumes to match specific job descriptions.
 
 RULES:
 1. Analyze the job description and identify key requirements, skills, and keywords
@@ -36,7 +29,7 @@ RULES:
 3. Keep the candidate's authentic voice — only use experiences they actually have
 4. Reorder sections to prioritize the most relevant experience
 5. Do NOT invent experience or skills the candidate does not have
-6. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation
+6. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation outside the JSON
 
 Respond in this exact JSON format:
 {
@@ -49,35 +42,31 @@ Respond in this exact JSON format:
     "Specific change 3 that was made"
   ],
   "tailoredResume": "The full rewritten resume text here"
-}`
-          },
-          {
-            role: "user",
-            content: `JOB DESCRIPTION:
+}`,
+        },
+        {
+          role: "user",
+          content: `JOB DESCRIPTION:
 ${jobDescription}
 
 ORIGINAL RESUME (${resumeName}):
-${resumeText}`
-          }
-        ],
-      }),
+${resumeText}`,
+        },
+      ],
+      temperature: 0.7,
+      max_tokens: 4096,
     });
 
-    if (!response.ok) {
-      const err = await response.text();
-      console.error("OpenRouter error:", err);
-      return NextResponse.json({ error: "AI request failed" }, { status: 500 });
-    }
-
-    const data = await response.json();
-    const text = data.choices[0].message.content;
-
+    const text = completion.choices[0].message.content || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Tailor error:", error);
-    return NextResponse.json({ error: "Failed to tailor resume" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to tailor resume" },
+      { status: 500 }
+    );
   }
 }
