@@ -47,13 +47,48 @@ export default function Tailor() {
 
   const downloadResume = () => {
     if (!result?.tailoredResume) return;
-    const blob = new Blob([result.tailoredResume], { type: "text/plain" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `${selectedResume?.name || "resume"}-tailored.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+
+    import("jspdf").then(({ jsPDF }) => {
+      const doc = new jsPDF();
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 20;
+      const maxWidth = pageWidth - margin * 2;
+
+      // Title
+      doc.setFontSize(16);
+      doc.setFont("helvetica", "bold");
+      doc.text(selectedResume?.name || "Tailored Resume", margin, 20);
+
+      // Role + Company
+      doc.setFontSize(11);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(100);
+      doc.text(`Tailored for: ${role || "Role"} at ${company || "Company"}`, margin, 30);
+      doc.text(`Match Score: ${result.matchScore}%`, margin, 38);
+
+      // Divider
+      doc.setDrawColor(200);
+      doc.line(margin, 43, pageWidth - margin, 43);
+
+      // Resume content
+      doc.setFontSize(10);
+      doc.setTextColor(0);
+      doc.setFont("helvetica", "normal");
+
+      const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
+      let y = 52;
+
+      lines.forEach((line: string) => {
+        if (y > 270) {
+          doc.addPage();
+          y = 20;
+        }
+        doc.text(line, margin, y);
+        y += 6;
+      });
+
+      doc.save(`${selectedResume?.name || "resume"}-tailored.pdf`);
+    });
   };
 
   const logApplication = () => {
@@ -136,7 +171,6 @@ export default function Tailor() {
             </div>
           </div>
 
-          {/* Resume text input */}
           <div className="card" style={{ padding: "32px" }}>
             <div className="tag" style={{ marginBottom: 16 }}>Your resume text</div>
             <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, marginBottom: 12 }}>
@@ -234,6 +268,9 @@ export default function Tailor() {
                 <button className="btn-primary" onClick={logApplication} style={{ padding: "14px", borderRadius: 2 }}>
                   Download & log application →
                 </button>
+                <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
+                  Download PDF only
+                </button>
                 <button className="btn-ghost" onClick={() => setStep("input")} style={{ padding: "12px", borderRadius: 2 }}>
                   Tailor another
                 </button>
@@ -241,7 +278,6 @@ export default function Tailor() {
             </div>
           </div>
 
-          {/* Tailored resume preview */}
           {result.tailoredResume && (
             <div className="card" style={{ padding: "32px" }}>
               <div className="tag" style={{ marginBottom: 20 }}>Tailored resume preview</div>
