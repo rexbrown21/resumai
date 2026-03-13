@@ -123,3 +123,97 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 .page-title { font-size: clamp(36px, 4vw, 52px); font-weight: 800; letter-spacing: -0.03em; line-height: 1.05; }
 .grid-gap { display: flex; flex-direction: column; gap: 2px; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+
+/* Tablet */
+@media (max-width: 768px) {
+  .page { padding: 80px 24px 40px; }
+
+  /* Nav */
+  nav { padding: 0 20px !important; }
+  nav .nav-links { display: none; }
+
+  /* Page titles */
+  h1 { font-size: 32px !important; }
+  h2 { font-size: 22px !important; }
+
+  /* All 2-col grids collapse to 1 col */
+  [style*="gridTemplateColumns: \"1fr 1fr\""],
+  [style*="gridTemplateColumns: '1fr 1fr'"],
+  [style*="grid-template-columns: 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* All 3-col grids collapse to 1 col */
+  [style*="gridTemplateColumns: \"1fr 1fr 1fr\""],
+  [style*="gridTemplateColumns: '1fr 1fr 1fr'"],
+  [style*="grid-template-columns: 1fr 1fr 1fr"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* All 4-col grids collapse to 2 col */
+  [style*="gridTemplateColumns: \"repeat(4, 1fr)\""],
+  [style*="gridTemplateColumns: 'repeat(4, 1fr)'"] {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* 2fr 1fr grids collapse */
+  [style*="gridTemplateColumns: \"2fr 1fr\""],
+  [style*="gridTemplateColumns: '2fr 1fr'"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* Cards */
+  .card { padding: 20px !important; }
+
+  /* Tailor page textarea heights */
+  textarea { height: 160px !important; }
+
+  /* Dashboard page padding */
+  [style*="padding: \"100px 60px"] {
+    padding: 80px 20px 40px !important;
+  }
+}
+
+/* Mobile */
+@media (max-width: 480px) {
+  .page { padding: 72px 16px 32px; }
+
+  nav { padding: 0 16px !important; height: 56px !important; }
+
+  h1 { font-size: 26px !important; }
+
+  .card { padding: 16px !important; }
+
+  /* Stack flex rows on mobile */
+  [style*="display: \"flex\""][style*="justifyContent: \"space-between\""] {
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  /* Full width buttons */
+  .btn-primary, .btn-ghost { width: 100%; }
+
+  /* Tracker filter bar wraps */
+  [style*="display: \"flex\""][style*="gap: 2"] {
+    flex-wrap: wrap;
+  }
+
+  /* Resume vault cards stack */
+  [style*="display: \"flex\""][style*="alignItems: \"center\""][style*="justifyContent: \"space-between\""] {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 12px !important;
+  }
+
+  /* Match score font shrink */
+  [style*="fontSize: 52"] {
+    font-size: 36px !important;
+  }
+}
+
+/* Nav mobile menu */
+@media (max-width: 768px) {
+  .nav-mobile-hidden { display: none !important; }
+}
