@@ -7,21 +7,16 @@ import { Resume } from "@/types";
 
 export default function Resumes() {
   const router = useRouter();
-  const { resumes, setResumes } = useApp();
+  const { resumes, addResume, removeResume } = useApp();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Technical" as Resume["type"], notes: "" });
 
-  const addResume = () => {
-    if (!form.name) return;
-    setResumes(prev => [...prev, {
-      id: Date.now(), name: form.name, type: form.type,
-      notes: form.notes, uploaded: new Date().toLocaleDateString(), tailored: 0,
-    }]);
-    setForm({ name: "", type: "Technical", notes: "" });
-    setShowAdd(false);
-  };
-
-  const removeResume = (id: number) => setResumes(prev => prev.filter(r => r.id !== id));
+  const handleAddResume = async () => {
+  if (!form.name) return;
+  await addResume({ name: form.name, type: form.type, notes: form.notes, uploaded: "", tailored: 0 });
+  setForm({ name: "", type: "Technical", notes: "" });
+  setShowAdd(false);
+};
 
   return (
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
@@ -83,7 +78,7 @@ export default function Resumes() {
               Drop PDF or DOCX here · or click to browse
             </p>
           </div>
-          <button className="btn-primary" onClick={addResume}
+          <button className="btn-primary" onClick={handleAddResume}
             style={{ padding: "12px 28px", borderRadius: 2, marginTop: 16 }}>
             Save resume →
           </button>
