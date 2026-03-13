@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
 import { Resume, TailorResult } from "@/types";
@@ -7,6 +8,7 @@ import { Resume, TailorResult } from "@/types";
 type Step = "input" | "analyzing" | "result";
 
 export default function Tailor() {
+  const router = useRouter();
   const { resumes, addApplication } = useApp();
   const [jobDesc, setJobDesc] = useState("");
   const [company, setCompany] = useState("");
@@ -75,14 +77,12 @@ export default function Tailor() {
       const s = result.structured;
 
       if (s) {
-        // Name
         doc.setFontSize(18);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(s.name, margin, y);
         y += 7;
 
-        // Contact
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(80, 80, 80);
@@ -94,12 +94,10 @@ export default function Tailor() {
         });
         y += 2;
 
-        // Top divider
         doc.setDrawColor(0, 0, 0);
         doc.line(margin, y, pageWidth - margin, y);
         y += 8;
 
-        // Summary
         addSectionHeader("Professional Summary");
         doc.setFontSize(10);
         doc.setFont("helvetica", "normal");
@@ -111,7 +109,6 @@ export default function Tailor() {
           y += 5;
         });
 
-        // Experience
         if (s.experience?.length > 0) {
           addSectionHeader("Work Experience");
           s.experience.forEach((exp: any) => {
@@ -119,7 +116,7 @@ export default function Tailor() {
             doc.setFontSize(11);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 0, 0);
-            doc.text(`${exp.title} — ${exp.company}`, margin, y);
+            doc.text(`${exp.title} - ${exp.company}`, margin, y);
             y += 5;
 
             checkPage();
@@ -133,7 +130,7 @@ export default function Tailor() {
               doc.setFontSize(10);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
+              const lines = doc.splitTextToSize(`- ${bullet}`, maxWidth - 4);
               lines.forEach((line: string) => {
                 checkPage();
                 doc.text(line, margin + 2, y);
@@ -144,7 +141,6 @@ export default function Tailor() {
           });
         }
 
-        // Projects
         if (s.projects?.length > 0) {
           addSectionHeader("Projects");
           s.projects.forEach((proj: any) => {
@@ -159,7 +155,7 @@ export default function Tailor() {
               doc.setFontSize(10);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
+              const lines = doc.splitTextToSize(`- ${bullet}`, maxWidth - 4);
               lines.forEach((line: string) => {
                 checkPage();
                 doc.text(line, margin + 2, y);
@@ -170,7 +166,6 @@ export default function Tailor() {
           });
         }
 
-        // Education
         if (s.education?.length > 0) {
           addSectionHeader("Education");
           s.education.forEach((edu: any) => {
@@ -195,7 +190,6 @@ export default function Tailor() {
           });
         }
 
-        // Skills
         if (s.skills) {
           addSectionHeader("Skills");
           Object.entries(s.skills).forEach(([category, value]) => {
@@ -215,7 +209,6 @@ export default function Tailor() {
         }
 
       } else {
-        // Fallback plain text
         doc.setFontSize(16);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
@@ -253,8 +246,23 @@ export default function Tailor() {
     setResult(null); setSelectedResume(null); setResumeText("");
   };
 
+  const backButton = (
+    <button
+      onClick={() => router.push("/dashboard")}
+      style={{
+        background: "transparent", border: "none", color: COLORS.textDim,
+        fontSize: 13, fontFamily: "'DM Mono', monospace", cursor: "pointer",
+        marginBottom: 24, padding: 0, display: "flex", alignItems: "center", gap: 6,
+      }}
+    >
+      &larr; Back to Dashboard
+    </button>
+  );
+
   return (
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
+      {step !== "analyzing" && backButton}
+
       <div className="tag" style={{ marginBottom: 16 }}>AI Tailor</div>
       <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 48, color: COLORS.text }}>
         Tailor your resume
@@ -310,7 +318,7 @@ export default function Tailor() {
               </div>
               <button className="btn-primary" onClick={analyze} disabled={!jobDesc || !resumeText}
                 style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
-                Analyze & tailor →
+                Analyze & tailor &rarr;
               </button>
             </div>
           </div>
@@ -410,7 +418,7 @@ export default function Tailor() {
               </div>
               <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 32 }}>
                 <button className="btn-primary" onClick={logApplication} style={{ padding: "14px", borderRadius: 2 }}>
-                  Download & log application →
+                  Download & log application &rarr;
                 </button>
                 <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                   Download PDF only
@@ -443,7 +451,7 @@ export default function Tailor() {
                       <div key={i} style={{ marginBottom: 14 }}>
                         <div style={{ fontWeight: 700, color: COLORS.text }}>{exp.title} — {exp.company}</div>
                         <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 6 }}>{exp.location} | {exp.period}</div>
-                        {exp.bullets?.map((b, j) => <div key={j}>• {b}</div>)}
+                        {exp.bullets?.map((b, j) => <div key={j}>- {b}</div>)}
                       </div>
                     ))}
                   </>
@@ -455,7 +463,7 @@ export default function Tailor() {
                     {result.structured.projects.map((proj, i) => (
                       <div key={i} style={{ marginBottom: 14 }}>
                         <div style={{ fontWeight: 700, color: COLORS.text }}>{proj.name} {proj.period && `(${proj.period})`}</div>
-                        {proj.bullets?.map((b, j) => <div key={j}>• {b}</div>)}
+                        {proj.bullets?.map((b, j) => <div key={j}>- {b}</div>)}
                       </div>
                     ))}
                   </>

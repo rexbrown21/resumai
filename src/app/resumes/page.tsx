@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS, RESUME_TYPES } from "@/lib/constants";
 import { Resume } from "@/types";
 
 export default function Resumes() {
+  const router = useRouter();
   const { resumes, setResumes } = useApp();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Technical" as Resume["type"], notes: "" });
@@ -23,6 +25,17 @@ export default function Resumes() {
 
   return (
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
+      <button
+        onClick={() => router.push("/dashboard")}
+        style={{
+          background: "transparent", border: "none", color: COLORS.textDim,
+          fontSize: 13, fontFamily: "'DM Mono', monospace", cursor: "pointer",
+          marginBottom: 24, padding: 0, display: "flex", alignItems: "center", gap: 6,
+        }}
+      >
+        ← Back to Dashboard
+      </button>
+
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
         <div>
           <div className="tag" style={{ marginBottom: 16 }}>Resume Vault</div>
@@ -69,7 +82,6 @@ export default function Resumes() {
             <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
               Drop PDF or DOCX here · or click to browse
             </p>
-            {/* TODO: wire up Supabase Storage upload */}
           </div>
           <button className="btn-primary" onClick={addResume}
             style={{ padding: "12px 28px", borderRadius: 2, marginTop: 16 }}>

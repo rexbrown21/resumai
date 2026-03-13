@@ -1,10 +1,12 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS, APP_STATUSES, STATUS_COLORS } from "@/lib/constants";
 import { Application } from "@/types";
 
 export default function Tracker() {
+  const router = useRouter();
   const { applications, setApplications } = useApp();
   const [filter, setFilter] = useState<"All" | Application["status"]>("All");
 
@@ -16,6 +18,17 @@ export default function Tracker() {
 
   return (
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
+      <button
+        onClick={() => router.push("/dashboard")}
+        style={{
+          background: "transparent", border: "none", color: COLORS.textDim,
+          fontSize: 13, fontFamily: "'DM Mono', monospace", cursor: "pointer",
+          marginBottom: 24, padding: 0, display: "flex", alignItems: "center", gap: 6,
+        }}
+      >
+        ← Back to Dashboard
+      </button>
+
       <div style={{ marginBottom: 48 }}>
         <div className="tag" style={{ marginBottom: 16 }}>Application Tracker</div>
         <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
@@ -27,7 +40,6 @@ export default function Tracker() {
         </p>
       </div>
 
-      {/* Filter bar */}
       <div style={{ display: "flex", gap: 2, marginBottom: 2 }}>
         {(["All", ...APP_STATUSES] as const).map(s => (
           <button
