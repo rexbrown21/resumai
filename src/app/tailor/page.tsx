@@ -46,48 +46,192 @@ export default function Tailor() {
   };
 
   const downloadResume = () => {
-    if (!result?.tailoredResume) return;
+    if (!result) return;
 
     import("jspdf").then(({ jsPDF }) => {
       const doc = new jsPDF();
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 20;
       const maxWidth = pageWidth - margin * 2;
+      let y = 20;
 
-      // Title
-      doc.setFontSize(16);
-      doc.setFont("helvetica", "bold");
-      doc.text(selectedResume?.name || "Tailored Resume", margin, 20);
+      const checkPage = () => {
+        if (y > 275) { doc.addPage(); y = 20; }
+      };
 
-      // Role + Company
-      doc.setFontSize(11);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(100);
-      doc.text(`Tailored for: ${role || "Role"} at ${company || "Company"}`, margin, 30);
-      doc.text(`Match Score: ${result.matchScore}%`, margin, 38);
-
-      // Divider
-      doc.setDrawColor(200);
-      doc.line(margin, 43, pageWidth - margin, 43);
-
-      // Resume content
-      doc.setFontSize(10);
-      doc.setTextColor(0);
-      doc.setFont("helvetica", "normal");
-
-      const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
-      let y = 52;
-
-      lines.forEach((line: string) => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-        doc.text(line, margin, y);
+      const addSectionHeader = (title: string) => {
+        y += 4;
+        checkPage();
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(title.toUpperCase(), margin, y);
+        y += 3;
+        doc.setDrawColor(0, 0, 0);
+        doc.line(margin, y, pageWidth - margin, y);
         y += 6;
-      });
+      };
 
-      doc.save(`${selectedResume?.name || "resume"}-tailored.pdf`);
+      const s = result.structured;
+
+      if (s) {
+        // Name
+        doc.setFontSize(18);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(s.name, margin, y);
+        y += 7;
+
+        // Contact
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(80, 80, 80);
+        const contactLines = doc.splitTextToSize(s.contact, maxWidth);
+        contactLines.forEach((line: string) => {
+          checkPage();
+          doc.text(line, margin, y);
+          y += 4;
+        });
+        y += 2;
+
+        // Top divider
+        doc.setDrawColor(0, 0, 0);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 8;
+
+        // Summary
+        addSectionHeader("Professional Summary");
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(0, 0, 0);
+        const summaryLines = doc.splitTextToSize(s.summary, maxWidth);
+        summaryLines.forEach((line: string) => {
+          checkPage();
+          doc.text(line, margin, y);
+          y += 5;
+        });
+
+        // Experience
+        if (s.experience?.length > 0) {
+          addSectionHeader("Work Experience");
+          s.experience.forEach((exp: any) => {
+            checkPage();
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+            doc.text(`${exp.title} — ${exp.company}`, margin, y);
+            y += 5;
+
+            checkPage();
+            doc.setFontSize(9);
+            doc.setFont("helvetica", "italic");
+            doc.setTextColor(100, 100, 100);
+            doc.text(`${exp.location} | ${exp.period}`, margin, y);
+            y += 5;
+
+            exp.bullets?.forEach((bullet: string) => {
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(0, 0, 0);
+              const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
+              lines.forEach((line: string) => {
+                checkPage();
+                doc.text(line, margin + 2, y);
+                y += 5;
+              });
+            });
+            y += 3;
+          });
+        }
+
+        // Projects
+        if (s.projects?.length > 0) {
+          addSectionHeader("Projects");
+          s.projects.forEach((proj: any) => {
+            checkPage();
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+            doc.text(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, margin, y);
+            y += 5;
+
+            proj.bullets?.forEach((bullet: string) => {
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "normal");
+              doc.setTextColor(0, 0, 0);
+              const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
+              lines.forEach((line: string) => {
+                checkPage();
+                doc.text(line, margin + 2, y);
+                y += 5;
+              });
+            });
+            y += 3;
+          });
+        }
+
+        // Education
+        if (s.education?.length > 0) {
+          addSectionHeader("Education");
+          s.education.forEach((edu: any) => {
+            checkPage();
+            doc.setFontSize(11);
+            doc.setFont("helvetica", "bold");
+            doc.setTextColor(0, 0, 0);
+            doc.text(edu.school, margin, y);
+            y += 5;
+
+            checkPage();
+            doc.setFontSize(10);
+            doc.setFont("helvetica", "normal");
+            doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y);
+            y += 4;
+
+            checkPage();
+            doc.setFontSize(9);
+            doc.setTextColor(100, 100, 100);
+            doc.text(`${edu.location} | ${edu.period}`, margin, y);
+            y += 7;
+          });
+        }
+
+        // Skills
+        if (s.skills) {
+          addSectionHeader("Skills");
+          Object.entries(s.skills).forEach(([category, value]) => {
+            checkPage();
+            doc.setFontSize(10);
+            doc.setTextColor(0, 0, 0);
+            const skillLine = `${category}: ${value}`;
+            const lines = doc.splitTextToSize(skillLine, maxWidth);
+            lines.forEach((line: string, i: number) => {
+              if (i === 0) doc.setFont("helvetica", "bold");
+              else doc.setFont("helvetica", "normal");
+              checkPage();
+              doc.text(line, margin, y);
+              y += 5;
+            });
+          });
+        }
+
+      } else {
+        // Fallback plain text
+        doc.setFontSize(16);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(0, 0, 0);
+        doc.text(selectedResume?.name || "Tailored Resume", margin, y);
+        y += 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "normal");
+        const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
+        lines.forEach((line: string) => {
+          checkPage();
+          doc.text(line, margin, y);
+          y += 6;
+        });
+      }
+
+      doc.save(`${s?.name || selectedResume?.name || "resume"}-tailored.pdf`);
     });
   };
 
@@ -278,16 +422,67 @@ export default function Tailor() {
             </div>
           </div>
 
-          {result.tailoredResume && (
+          {result.structured && (
             <div className="card" style={{ padding: "32px" }}>
               <div className="tag" style={{ marginBottom: 20 }}>Tailored resume preview</div>
-              <pre style={{
-                fontFamily: "'DM Mono', monospace", fontSize: 12,
-                color: COLORS.textDim, lineHeight: 1.8,
-                whiteSpace: "pre-wrap", wordBreak: "break-word",
-              }}>
-                {result.tailoredResume}
-              </pre>
+              <div style={{ fontFamily: "'DM Mono', monospace", fontSize: 12, color: COLORS.textDim, lineHeight: 1.8 }}>
+                <div style={{ fontSize: 16, fontWeight: 800, color: COLORS.text, marginBottom: 4 }}>{result.structured.name}</div>
+                <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 16 }}>{result.structured.contact}</div>
+
+                {result.structured.summary && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.text, letterSpacing: "0.1em", borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 4, marginBottom: 10 }}>PROFESSIONAL SUMMARY</div>
+                    <p style={{ marginBottom: 16 }}>{result.structured.summary}</p>
+                  </>
+                )}
+
+                {result.structured.experience?.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.text, letterSpacing: "0.1em", borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 4, marginBottom: 10 }}>WORK EXPERIENCE</div>
+                    {result.structured.experience.map((exp, i) => (
+                      <div key={i} style={{ marginBottom: 14 }}>
+                        <div style={{ fontWeight: 700, color: COLORS.text }}>{exp.title} — {exp.company}</div>
+                        <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 6 }}>{exp.location} | {exp.period}</div>
+                        {exp.bullets?.map((b, j) => <div key={j}>• {b}</div>)}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {result.structured.projects?.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.text, letterSpacing: "0.1em", borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 4, marginBottom: 10, marginTop: 16 }}>PROJECTS</div>
+                    {result.structured.projects.map((proj, i) => (
+                      <div key={i} style={{ marginBottom: 14 }}>
+                        <div style={{ fontWeight: 700, color: COLORS.text }}>{proj.name} {proj.period && `(${proj.period})`}</div>
+                        {proj.bullets?.map((b, j) => <div key={j}>• {b}</div>)}
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {result.structured.education?.length > 0 && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.text, letterSpacing: "0.1em", borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 4, marginBottom: 10, marginTop: 16 }}>EDUCATION</div>
+                    {result.structured.education.map((edu, i) => (
+                      <div key={i} style={{ marginBottom: 10 }}>
+                        <div style={{ fontWeight: 700, color: COLORS.text }}>{edu.school}</div>
+                        <div>{edu.degree}{edu.gpa && ` | GPA: ${edu.gpa}`}</div>
+                        <div style={{ fontSize: 11, color: COLORS.textMuted }}>{edu.location} | {edu.period}</div>
+                      </div>
+                    ))}
+                  </>
+                )}
+
+                {result.structured.skills && (
+                  <>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: COLORS.text, letterSpacing: "0.1em", borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 4, marginBottom: 10, marginTop: 16 }}>SKILLS</div>
+                    {Object.entries(result.structured.skills).map(([cat, val]) => (
+                      <div key={cat}><span style={{ color: COLORS.text, fontWeight: 600 }}>{cat}:</span> {val as string}</div>
+                    ))}
+                  </>
+                )}
+              </div>
             </div>
           )}
         </div>

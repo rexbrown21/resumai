@@ -30,4 +30,30 @@ export interface TailorResult {
   matchScore: number;
   keywords: string[];
   suggestions: string[];
+  tailoredResume?: string;
+  structured?: {
+    name: string;
+    contact: string;
+    summary: string;
+    experience: {
+      title: string;
+      company: string;
+      location: string;
+      period: string;
+      bullets: string[];
+    }[];
+    projects: {
+      name: string;
+      period: string;
+      bullets: string[];
+    }[];
+    education: {
+      degree: string;
+      school: string;
+      location: string;
+      period: string;
+      gpa: string;
+    }[];
+    skills: Record<string, string>;
+  };
 }

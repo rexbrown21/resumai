@@ -21,15 +21,14 @@ export async function POST(req: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `You are an expert resume writer and career coach. Your job is to tailor resumes to match specific job descriptions.
+          content: `You are an expert ATS-optimized resume writer. Your job is to tailor resumes to match specific job descriptions.
 
 RULES:
 1. Analyze the job description and identify key requirements, skills, and keywords
-2. Rewrite the resume bullets to highlight relevant experience using keywords from the job description
+2. Rewrite the resume to highlight relevant experience using keywords from the job description
 3. Keep the candidate's authentic voice — only use experiences they actually have
-4. Reorder sections to prioritize the most relevant experience
-5. Do NOT invent experience or skills the candidate does not have
-6. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation outside the JSON
+4. Do NOT invent experience or skills the candidate does not have
+5. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation
 
 Respond in this exact JSON format:
 {
@@ -41,7 +40,49 @@ Respond in this exact JSON format:
     "Specific change 2 that was made",
     "Specific change 3 that was made"
   ],
-  "tailoredResume": "The full rewritten resume text here"
+  "structured": {
+    "name": "Full Name",
+    "contact": "City, Country | phone | email | linkedin | github",
+    "summary": "2-3 sentence professional summary tailored to the job",
+    "experience": [
+      {
+        "title": "Job Title",
+        "company": "Company Name",
+        "location": "City, Country",
+        "period": "Month Year - Month Year",
+        "bullets": [
+          "Achievement or responsibility bullet 1",
+          "Achievement or responsibility bullet 2",
+          "Achievement or responsibility bullet 3"
+        ]
+      }
+    ],
+    "projects": [
+      {
+        "name": "Project Name",
+        "period": "Year",
+        "bullets": [
+          "What you built and the impact",
+          "Technologies used"
+        ]
+      }
+    ],
+    "education": [
+      {
+        "degree": "Degree Name",
+        "school": "School Name",
+        "location": "City, Country",
+        "period": "Year - Year",
+        "gpa": "4.37/5"
+      }
+    ],
+    "skills": {
+      "Languages": "Python, TypeScript, JavaScript",
+      "Frameworks": "Next.js, FastAPI, React",
+      "Tools": "n8n, Docker, Kubernetes, Git",
+      "Cloud": "AWS, GCP, Supabase"
+    }
+  }
 }`,
         },
         {
