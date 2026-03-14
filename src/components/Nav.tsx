@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
@@ -9,6 +9,22 @@ export default function Nav() {
   const pathname = usePathname();
   const { user } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  useEffect(() => {
+    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
+    if (saved) {
+      setTheme(saved);
+      document.documentElement.setAttribute("data-theme", saved);
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    localStorage.setItem("theme", next);
+    document.documentElement.setAttribute("data-theme", next);
+  };
 
   const navLinks = [
     { label: "Dashboard", href: "/dashboard" },
@@ -21,6 +37,28 @@ export default function Nav() {
     router.push(href);
     setMenuOpen(false);
   };
+
+  const ThemeToggle = () => (
+    <button
+      onClick={toggleTheme}
+      style={{
+        background: "transparent",
+        border: `1px solid ${COLORS.border}`,
+        color: COLORS.textDim,
+        cursor: "pointer",
+        padding: "6px 10px",
+        borderRadius: 2,
+        fontSize: 14,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        transition: "all 0.2s",
+      }}
+      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+    >
+      {theme === "dark" ? "☀️" : "🌙"}
+    </button>
+  );
 
   return (
     <>
@@ -68,18 +106,21 @@ export default function Nav() {
               </button>
             ))}
             <div style={{ width: 1, height: 20, background: COLORS.border, margin: "0 8px" }} />
+            <ThemeToggle />
             <div style={{
               width: 32, height: 32, borderRadius: "50%",
               background: `${COLORS.accent}22`,
               border: `1px solid ${COLORS.accent}44`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700, color: COLORS.accent, cursor: "pointer",
+              marginLeft: 4,
             }}>
               {user.name?.[0]?.toUpperCase() || "U"}
             </div>
           </div>
         ) : (
-          <div className="nav-mobile-hidden" style={{ display: "flex", gap: 8 }}>
+          <div className="nav-mobile-hidden" style={{ display: "flex", gap: 8, alignItems: "center" }}>
+            <ThemeToggle />
             <button
               onClick={() => navigate("/login")}
               style={{
@@ -106,22 +147,23 @@ export default function Nav() {
           </div>
         )}
 
-        {/* Hamburger — mobile only */}
-        <button
-          onClick={() => setMenuOpen(!menuOpen)}
-          style={{
-            display: "none",
-            background: "transparent", border: `1px solid ${COLORS.border}`,
-            color: COLORS.text, cursor: "pointer",
-            padding: "6px 10px", borderRadius: 2, fontSize: 16,
-          }}
-          className="nav-hamburger"
-        >
-          {menuOpen ? "✕" : "☰"}
-        </button>
+        {/* Mobile right side — theme toggle + hamburger */}
+        <div style={{ display: "none", alignItems: "center", gap: 8 }} className="nav-hamburger-group">
+          <ThemeToggle />
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            style={{
+              background: "transparent", border: `1px solid ${COLORS.border}`,
+              color: COLORS.text, cursor: "pointer",
+              padding: "6px 10px", borderRadius: 2, fontSize: 16,
+            }}
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        </div>
       </nav>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown */}
       {menuOpen && (
         <div style={{
           position: "fixed", top: 64, left: 0, right: 0, zIndex: 99,
@@ -178,11 +220,16 @@ export default function Nav() {
         </div>
       )}
 
-      {/* Show hamburger on mobile via CSS */}
       <style>{`
         @media (max-width: 768px) {
-          .nav-hamburger { display: flex !important; }
+          .nav-hamburger-group { display: flex !important; }
           .nav-mobile-hidden { display: none !important; }
+        }
+        [data-theme="light"] nav {
+          background: rgba(245,245,240,0.95) !important;
+        }
+        [data-theme="light"] .nav-dropdown {
+          background: rgba(245,245,240,0.98) !important;
         }
       `}</style>
     </>
