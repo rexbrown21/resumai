@@ -38,28 +38,6 @@ export default function Nav() {
     setMenuOpen(false);
   };
 
-  const ThemeToggle = () => (
-    <button
-      onClick={toggleTheme}
-      style={{
-        background: "transparent",
-        border: `1px solid ${COLORS.border}`,
-        color: COLORS.textDim,
-        cursor: "pointer",
-        padding: "6px 10px",
-        borderRadius: 2,
-        fontSize: 14,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        transition: "all 0.2s",
-      }}
-      title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
-    >
-      {theme === "dark" ? "☀️" : "🌙"}
-    </button>
-  );
-
   return (
     <>
       <nav style={{
@@ -85,74 +63,99 @@ export default function Nav() {
           </span>
         </div>
 
-        {/* Desktop nav */}
-        {user ? (
-          <div className="nav-mobile-hidden" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-            {navLinks.map(({ label, href }) => (
+        {/* Right side — always visible */}
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+
+          {/* Desktop nav links — hidden on mobile */}
+          {user ? (
+            <div className="nav-mobile-hidden" style={{ display: "flex", alignItems: "center", gap: 6 }}>
+              {navLinks.map(({ label, href }) => (
+                <button
+                  key={href}
+                  onClick={() => navigate(href)}
+                  style={{
+                    padding: "6px 16px", borderRadius: 2, fontSize: 12,
+                    background: "transparent", cursor: "pointer",
+                    fontFamily: "'Syne', sans-serif", fontWeight: 500,
+                    letterSpacing: "0.05em",
+                    border: `1px solid ${pathname === href ? COLORS.accent : COLORS.border}`,
+                    color: pathname === href ? COLORS.accent : COLORS.textDim,
+                    transition: "all 0.2s",
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+              <div style={{ width: 1, height: 20, background: COLORS.border, margin: "0 4px" }} />
+            </div>
+          ) : (
+            <div className="nav-mobile-hidden" style={{ display: "flex", gap: 8, alignItems: "center" }}>
               <button
-                key={href}
-                onClick={() => navigate(href)}
+                onClick={() => navigate("/login")}
                 style={{
-                  padding: "6px 16px", borderRadius: 2, fontSize: 12,
-                  background: "transparent", cursor: "pointer",
-                  fontFamily: "'Syne', sans-serif", fontWeight: 500,
-                  letterSpacing: "0.05em",
-                  border: `1px solid ${pathname === href ? COLORS.accent : COLORS.border}`,
-                  color: pathname === href ? COLORS.accent : COLORS.textDim,
+                  padding: "8px 20px", borderRadius: 2, fontSize: 13,
+                  background: "transparent", border: `1px solid ${COLORS.border}`,
+                  color: COLORS.textDim, cursor: "pointer", fontFamily: "'Syne', sans-serif",
                   transition: "all 0.2s",
                 }}
               >
-                {label}
+                Sign in
               </button>
-            ))}
-            <div style={{ width: 1, height: 20, background: COLORS.border, margin: "0 8px" }} />
-            <ThemeToggle />
-            <div style={{
+              <button
+                onClick={() => navigate("/signup")}
+                style={{
+                  padding: "8px 20px", borderRadius: 2, fontSize: 13,
+                  background: COLORS.accent, border: "none",
+                  color: "#080808", cursor: "pointer", fontFamily: "'Syne', sans-serif",
+                  fontWeight: 700, letterSpacing: "0.05em",
+                  transition: "all 0.2s",
+                }}
+              >
+                Get started
+              </button>
+            </div>
+          )}
+
+          {/* Theme toggle — ALWAYS visible */}
+          <button
+            onClick={toggleTheme}
+            style={{
+              background: "transparent",
+              border: `1px solid ${COLORS.border}`,
+              color: COLORS.textDim,
+              cursor: "pointer",
+              padding: "6px 10px",
+              borderRadius: 2,
+              fontSize: 14,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              transition: "all 0.2s",
+            }}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? "☀️" : "🌙"}
+          </button>
+
+          {/* User avatar — desktop only */}
+          {user && (
+            <div className="nav-mobile-hidden" style={{
               width: 32, height: 32, borderRadius: "50%",
               background: `${COLORS.accent}22`,
               border: `1px solid ${COLORS.accent}44`,
               display: "flex", alignItems: "center", justifyContent: "center",
               fontSize: 12, fontWeight: 700, color: COLORS.accent, cursor: "pointer",
-              marginLeft: 4,
             }}>
               {user.name?.[0]?.toUpperCase() || "U"}
             </div>
-          </div>
-        ) : (
-          <div className="nav-mobile-hidden" style={{ display: "flex", gap: 8, alignItems: "center" }}>
-            <ThemeToggle />
-            <button
-              onClick={() => navigate("/login")}
-              style={{
-                padding: "8px 20px", borderRadius: 2, fontSize: 13,
-                background: "transparent", border: `1px solid ${COLORS.border}`,
-                color: COLORS.textDim, cursor: "pointer", fontFamily: "'Syne', sans-serif",
-                transition: "all 0.2s",
-              }}
-            >
-              Sign in
-            </button>
-            <button
-              onClick={() => navigate("/signup")}
-              style={{
-                padding: "8px 20px", borderRadius: 2, fontSize: 13,
-                background: COLORS.accent, border: "none",
-                color: "#080808", cursor: "pointer", fontFamily: "'Syne', sans-serif",
-                fontWeight: 700, letterSpacing: "0.05em",
-                transition: "all 0.2s",
-              }}
-            >
-              Get started
-            </button>
-          </div>
-        )}
+          )}
 
-        {/* Mobile right side — theme toggle + hamburger */}
-        <div style={{ display: "none", alignItems: "center", gap: 8 }} className="nav-hamburger-group">
-          <ThemeToggle />
+          {/* Hamburger — mobile only */}
           <button
             onClick={() => setMenuOpen(!menuOpen)}
+            className="nav-hamburger"
             style={{
+              display: "none",
               background: "transparent", border: `1px solid ${COLORS.border}`,
               color: COLORS.text, cursor: "pointer",
               padding: "6px 10px", borderRadius: 2, fontSize: 16,
@@ -222,14 +225,8 @@ export default function Nav() {
 
       <style>{`
         @media (max-width: 768px) {
-          .nav-hamburger-group { display: flex !important; }
+          .nav-hamburger { display: flex !important; }
           .nav-mobile-hidden { display: none !important; }
-        }
-        [data-theme="light"] nav {
-          background: rgba(245,245,240,0.95) !important;
-        }
-        [data-theme="light"] .nav-dropdown {
-          background: rgba(245,245,240,0.98) !important;
         }
       `}</style>
     </>
