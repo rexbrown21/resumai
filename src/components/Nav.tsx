@@ -66,7 +66,7 @@ export default function Nav() {
         position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
         display: "flex", alignItems: "center", justifyContent: "space-between",
         padding: "0 40px", height: 64,
-        background: "rgba(8,8,8,0.92)",
+        background: "var(--bg)",
         backdropFilter: "blur(12px)",
         borderBottom: `1px solid ${COLORS.border}`,
       }}>
@@ -167,7 +167,7 @@ export default function Nav() {
       {menuOpen && (
         <div style={{
           position: "fixed", top: 64, left: 0, right: 0, zIndex: 99,
-          background: "rgba(8,8,8,0.98)",
+          background: "var(--bg)",
           backdropFilter: "blur(12px)",
           borderBottom: `1px solid ${COLORS.border}`,
           padding: "16px 20px 24px",

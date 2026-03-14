@@ -1,15 +1,15 @@
 export const COLORS = {
-  bg: "#080808",
-  surface: "#0f0f0f",
-  border: "#1a1a1a",
-  borderLight: "#252525",
-  accent: "#e8ff47",
-  accentDim: "#c8df27",
-  text: "#f0f0f0",
-  textMuted: "#666",
-  textDim: "#999",
-  danger: "#ff4757",
-  success: "#2ed573",
+  bg: "var(--bg)",
+  surface: "var(--surface)",
+  border: "var(--border)",
+  borderLight: "var(--border-light)",
+  accent: "var(--accent)",
+  accentDim: "var(--accent-dim)",
+  text: "var(--text)",
+  textMuted: "var(--text-muted)",
+  textDim: "var(--text-dim)",
+  danger: "var(--danger)",
+  success: "var(--success)",
 };
 
 export const RESUME_TYPES = ["Technical", "Managerial", "Consulting", "Research", "General"] as const;
