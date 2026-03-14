@@ -120,21 +120,20 @@ export default function Nav() {
           <button
             onClick={toggleTheme}
             style={{
-              background: "transparent",
-              border: `1px solid ${COLORS.border}`,
-              color: COLORS.textDim,
+              background: theme === "dark" ? "#1a1a1a" : "#e0e0d8",
+              border: "1px solid #555",
+              color: theme === "dark" ? "#f0f0f0" : "#111",
               cursor: "pointer",
-              padding: "6px 10px",
+              padding: "6px 12px",
               borderRadius: 2,
-              fontSize: 14,
+              fontSize: 13,
+              fontFamily: "'DM Mono', monospace",
               display: "flex",
               alignItems: "center",
-              justifyContent: "center",
-              transition: "all 0.2s",
+              gap: 6,
             }}
-            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
           >
-            {theme === "dark" ? "☀️" : "🌙"}
+            {theme === "dark" ? "☀ Light" : "🌙 Dark"}
           </button>
 
           {/* User avatar — desktop only */}
