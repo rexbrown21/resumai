@@ -47,7 +47,7 @@ function FloatingKeywords() {
           fontFamily: "'DM Mono', monospace",
           fontSize: `${size}px`,
           color: "var(--accent)",
-          opacity: 0.06,
+          opacity: 0.12,
           animation: `floatUp ${duration}s ${delay}s linear infinite`,
           whiteSpace: "nowrap",
           letterSpacing: "0.05em",
@@ -293,33 +293,7 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Testimonials */}
-        <section style={{
-          padding: "80px 24px", borderTop: "1px solid var(--border)",
-          position: "relative", zIndex: 1,
-        }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-            <div className="tag" style={{ marginBottom: 40 }}>Early users</div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: 2 }}>
-              {[
-                { quote: "Got a callback within 3 days of using the tailored version. Never happened before.", name: "Tunde A.", role: "Software Engineer, Lagos" },
-                { quote: "The match score feature alone changed how I approach every application.", name: "Amara K.", role: "Product Manager, Accra" },
-                { quote: "Finally a tool that sounds like me and not a robot wrote my resume.", name: "Chisom O.", role: "Data Analyst, Abuja" },
-              ].map(({ quote, name, role }) => (
-                <div key={name} className="card" style={{ padding: "32px", position: "relative" }}>
-                  <div style={{
-                    fontSize: 48, color: "var(--accent)", opacity: 0.3,
-                    fontFamily: "Georgia, serif", lineHeight: 1,
-                    marginBottom: 8, marginTop: -8,
-                  }}>"</div>
-                  <p className="mono" style={{ fontSize: 13, color: "var(--text-dim)", lineHeight: 1.7, marginBottom: 20 }}>{quote}</p>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: "var(--text)" }}>{name}</div>
-                  <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 4 }}>{role}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+
 
         {/* CTA */}
         <section style={{
@@ -381,8 +355,8 @@ export default function LandingPage() {
       <style>{`
         @keyframes floatUp {
           0%   { transform: translateY(0) rotate(0deg); opacity: 0; }
-          5%   { opacity: 0.06; }
-          95%  { opacity: 0.06; }
+          5%   { opacity: 0.12; }
+          95%  { opacity: 0.12; }
           100% { transform: translateY(-105vh) rotate(8deg); opacity: 0; }
         }
 
