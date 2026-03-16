@@ -277,7 +277,7 @@ export default function LandingPage() {
                   <div style={{
                     position: "absolute", bottom: -10, right: -10,
                     fontSize: 120, fontWeight: 800, color,
-                    opacity: 0.04, lineHeight: 1, letterSpacing: "-0.05em",
+                    opacity: 0.15, lineHeight: 1, letterSpacing: "-0.05em",
                     pointerEvents: "none", userSelect: "none",
                   }}>{n}</div>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 24 }}>

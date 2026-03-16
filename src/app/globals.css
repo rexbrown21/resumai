@@ -198,3 +198,7 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 @media (max-width: 768px) {
   .nav-mobile-hidden { display: none !important; }
 }
+
+[data-theme="light"] nav {
+  background: var(--bg) !important;
+}
