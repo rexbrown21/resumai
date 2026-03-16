@@ -13,6 +13,7 @@
   --text-dim: #999;
   --danger: #ff4757;
   --success: #2ed573;
+  --keyword-color: #ffffff;
 }
 
 [data-theme="light"] {
@@ -28,6 +29,7 @@
   --text-dim: #666;
   --danger: #e03040;
   --success: #1a9e50;
+  --keyword-color: #111111;
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }

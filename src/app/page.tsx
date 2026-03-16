@@ -46,8 +46,8 @@ function FloatingKeywords() {
           bottom: "-40px",
           fontFamily: "'DM Mono', monospace",
           fontSize: `${size}px`,
-          color: "var(--accent)",
-          opacity: 0.12,
+          color: "var(--keyword-color)",
+          opacity: 0.16,
           animation: `floatUp ${duration}s ${delay}s linear infinite`,
           whiteSpace: "nowrap",
           letterSpacing: "0.05em",
@@ -266,9 +266,9 @@ export default function LandingPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 2 }}>
               {[
                 { n: "01", title: "Upload your resumes", desc: "Store multiple versions — technical, managerial, consulting. Each one ready to be deployed.", icon: "⬆", color: "#e8ff47" },
-                { n: "02", title: "Paste the job", desc: "Drop in the job description. AI classifies role type, seniority, and required skills instantly.", icon: "📋", color: "#60a5fa" },
+                { n: "02", title: "Paste the job", desc: "Drop in the job description. AI classifies role type, seniority, and required skills instantly.", icon: "📋", color: "#00d4ff" },
                 { n: "03", title: "AI tailors your resume", desc: "Llama 3.3 rewrites bullets, reorders sections, and surfaces the right keywords — in your voice.", icon: "✦", color: "#e8ff47" },
-                { n: "04", title: "Track every application", desc: "Log status, notes, and which resume version was sent. Never lose track of your pipeline.", icon: "📊", color: "#2ed573" },
+                { n: "04", title: "Track every application", desc: "Log status, notes, and which resume version was sent. Never lose track of your pipeline.", icon: "📊", color: "#00ff88" },
               ].map(({ n, title, desc, icon, color }, i) => (
                 <div key={n} className="card step-card" style={{
                   padding: "40px 32px", position: "relative", overflow: "hidden",
