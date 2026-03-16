@@ -14,8 +14,8 @@ const FLOATING_KEYWORDS = [
 ];
 
 const MARQUEE_ITEMS = [
-  "ATS Optimized", "Match Score 94%", "Tailored in 28s",
-  "Built for Africa", "Zero Fluff", "Your Voice", "AI-Powered",
+  "ATS Optimized", "Tailored in 28s",
+  "Your Voice", "AI-Powered",
   "PDF Ready", "Real Results", "Every Application",
 ];
 
