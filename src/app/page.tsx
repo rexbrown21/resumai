@@ -159,9 +159,9 @@ export default function LandingPage() {
 
           {/* Scroll indicator */}
           <div className="animate-fade-up" style={{
-            position: "absolute", bottom: 40, left: "50%", transform: "translateX(-50%)",
-            animationDelay: "1s", opacity: 0,
-            display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
+             position: "absolute", bottom: 40, left: 0, right: 0,
+             animationDelay: "1s", opacity: 0,
+             display: "flex", flexDirection: "column", alignItems: "center", gap: 8,
           }}>
             <span className="mono" style={{ fontSize: 10, color: "var(--text-muted)", letterSpacing: "0.2em" }}>SCROLL</span>
             <div style={{
@@ -223,7 +223,7 @@ export default function LandingPage() {
                 { n: "04", title: "Track every application", desc: "Log status, notes, and which resume version was sent. Never lose track of your pipeline.", icon: "📊", color: "#00ff88" },
               ].map(({ n, title, desc, icon, color }, i) => (
                 <div key={n} className="card step-card" style={{
-                  padding: "40px 32px", position: "relative", overflow: "hidden",
+                  padding: "clamp(24px, 4vw, 40px) clamp(20px, 3vw, 32px)", position: "relative", overflow: "hidden",
                   animation: `fadeUp 0.6s ${0.1 + i * 0.1}s ease both`,
                 }}>
                   <div style={{
