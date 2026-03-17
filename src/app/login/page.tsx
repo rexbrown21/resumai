@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "@/components/layout/Nav";
+import FloatingKeywords from "@/components/FloatingKeywords";
 import { useApp } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 
@@ -23,11 +24,7 @@ export default function LoginPage() {
       password: form.password,
     });
 
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-      return;
-    }
+    if (error) { setError(error.message); setLoading(false); return; }
 
     setUser({
       id: data.user.id,
@@ -42,9 +39,11 @@ export default function LoginPage() {
   return (
     <>
       <Nav />
+      <FloatingKeywords />
       <div style={{
         minHeight: "100vh", display: "flex", alignItems: "center",
         justifyContent: "center", padding: "40px",
+        position: "relative", zIndex: 1,
       }}>
         <div style={{ width: "100%", maxWidth: 420, animation: "fadeUp 0.5s ease" }}>
           <div className="tag" style={{ marginBottom: 32 }}>Welcome back</div>
