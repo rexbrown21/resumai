@@ -18,6 +18,8 @@ export default function Tailor() {
   const [step, setStep] = useState<Step>("input");
   const [result, setResult] = useState<TailorResult & { tailoredResume?: string } | null>(null);
   const [error, setError] = useState("");
+  const [jobUrl, setJobUrl] = useState("");
+  const [fetching, setFetching] = useState(false);
 
   const analyze = async () => {
     if (!jobDesc) return;
@@ -46,6 +48,30 @@ export default function Tailor() {
       setStep("input");
     }
   };
+
+  const fetchJobFromUrl = async () => {
+  if (!jobUrl) return;
+  setFetching(true);
+  setError("");
+  try {
+    const res = await fetch("/api/fetch-job", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ url: jobUrl }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      setError(data.error || "Could not fetch this page. Paste the job description manually.");
+    } else {
+      setJobDesc(data.jobDescription);
+      setError("");
+    }
+  } catch {
+    setError("Could not fetch this page. Paste the job description manually.");
+  } finally {
+    setFetching(false);
+  }
+};
 
   const downloadResume = () => {
     if (!result) return;
@@ -270,6 +296,37 @@ export default function Tailor() {
 
       {step === "input" && (
         <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
+
+          {/* URL Fetch */}
+          <div className="card" style={{ padding: "32px" }}>
+            <div className="tag" style={{ marginBottom: 16 }}>Fetch from URL <span style={{ color: COLORS.accent, marginLeft: 6 }}>beta</span></div>
+            <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, marginBottom: 12 }}>
+              Paste a job posting link and we'll extract the description automatically.
+            </p>
+            <div style={{ display: "flex", gap: 8 }}>
+              <input
+                placeholder="https://jobs.lever.co/company/job-id"
+                value={jobUrl}
+                onChange={e => setJobUrl(e.target.value)}
+                onKeyDown={e => e.key === "Enter" && fetchJobFromUrl()}
+                style={{ flex: 1, padding: "12px 16px", borderRadius: 2, fontSize: 13, fontFamily: "'DM Mono', monospace" }}
+              />
+              <button
+                onClick={fetchJobFromUrl}
+                disabled={!jobUrl || fetching}
+                className="btn-primary"
+                style={{ padding: "12px 20px", borderRadius: 2, fontSize: 13, whiteSpace: "nowrap" }}
+              >
+                {fetching ? "Fetching..." : "Fetch →"}
+              </button>
+            </div>
+            {jobDesc && !error && (
+              <p className="mono" style={{ color: COLORS.success, fontSize: 11, marginTop: 8 }}>
+                ✓ Job description fetched — review below and edit if needed
+              </p>
+            )}
+          </div>
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <div className="card" style={{ padding: "32px" }}>
