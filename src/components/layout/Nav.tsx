@@ -14,6 +14,7 @@ export default function Nav() {
     { href: "/resumes", label: "Resumes" },
     { href: "/tailor", label: "Tailor" },
     { href: "/tracker", label: "Tracker" },
+    { label: "Profile", href: "/profile" },
   ];
 
   return (
