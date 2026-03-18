@@ -4,6 +4,7 @@ import Groq from "groq-sdk";
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 export async function POST(req: NextRequest) {
+  let url = "";
   try {
     const { url } = await req.json();
     if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
@@ -17,7 +18,8 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      return NextResponse.json({ error: "Could not fetch this page. Paste the job description manually." }, { status: 400 });
+      console.error("Response status:", response.status, response.statusText);
+      return NextResponse.json({ error: `Could not fetch this page (${response.status}). Paste the job description manually.` }, { status: 400 });
     }
 
     const html = await response.text();
@@ -57,6 +59,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ jobDescription });
   } catch (error) {
     console.error("Fetch job error:", error);
+    console.error("URL attempted:", url);
     return NextResponse.json({ error: "Could not fetch this page. Paste the job description manually." }, { status: 500 });
   }
 }
