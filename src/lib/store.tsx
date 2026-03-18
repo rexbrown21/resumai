@@ -14,6 +14,7 @@ interface AppState {
   addResume: (r: Omit<Resume, "id">) => Promise<void>;
   removeResume: (id: number) => Promise<void>;
   loading: boolean;
+  sessionLoaded: boolean;
 }
 
 const AppContext = createContext<AppState | null>(null);
@@ -23,6 +24,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [resumes, setResumes] = useState<Resume[]>([]);
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(false);
+  const [sessionLoaded, setSessionLoaded] = useState(false);
 
   // Load user from Supabase session on mount
   useEffect(() => {
@@ -34,6 +36,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
           name: session.user.user_metadata?.name || session.user.email || "",
         });
       }
+      setSessionLoaded(true);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -186,7 +189,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     <AppContext.Provider value={{
       user, setUser, resumes, setResumes,
       applications, setApplications, addApplication,
-      addResume, removeResume, loading,
+      addResume, removeResume, loading, sessionLoaded,
     }}>
       {children}
     </AppContext.Provider>
