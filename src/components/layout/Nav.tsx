@@ -139,7 +139,7 @@ export default function Nav() {
                     <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{user.email}</div>
                   </div>
                   <button
-                    onClick={(e) => {
+                    onClick={(e: React.MouseEvent) => {
                       e.stopPropagation();
                       setDropdownOpen(false);
                       router.push("/profile");
