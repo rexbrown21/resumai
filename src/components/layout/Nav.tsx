@@ -139,7 +139,8 @@ export default function Nav() {
                     <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{user.email}</div>
                   </div>
                   <button
-                    onClick={() => {
+                    onClick={(e) => {
+                      e.stopPropagation();
                       setDropdownOpen(false);
                       router.push("/profile");
                     }}
