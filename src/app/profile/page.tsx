@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
+import AuthGuard from "@/components/AuthGuard";
 
 interface WorkExperience {
   title: string;
@@ -133,6 +134,7 @@ export default function ProfilePage() {
   );
 
   return (
+    <AuthGuard>
     <div style={{ padding: "100px 60px 80px", maxWidth: 900, margin: "0 auto" }}>
       <button onClick={() => router.push("/dashboard")} style={{
         background: "transparent", border: "none", color: COLORS.textDim,
@@ -341,5 +343,6 @@ export default function ProfilePage() {
         </button>
       </div>
     </div>
+    </AuthGuard>
   );
 }

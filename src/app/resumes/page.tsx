@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS, RESUME_TYPES } from "@/lib/constants";
 import { Resume } from "@/types";
+import AuthGuard from "@/components/AuthGuard";
+
 
 export default function Resumes() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function Resumes() {
 };
 
   return (
+    <AuthGuard>
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
       <button
         onClick={() => router.push("/dashboard")}
@@ -128,5 +131,6 @@ export default function Resumes() {
         ))}
       </div>
     </div>
+    </AuthGuard>
   );
 }

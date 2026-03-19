@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
 import { Resume, TailorResult } from "@/types";
+import AuthGuard from "@/components/AuthGuard";
 
 type Step = "input" | "analyzing" | "result";
 
@@ -286,6 +287,7 @@ export default function Tailor() {
   );
 
   return (
+    <AuthGuard>
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
       {step !== "analyzing" && backButton}
 
@@ -553,5 +555,6 @@ export default function Tailor() {
         </div>
       )}
     </div>
+    </AuthGuard>
   );
 }

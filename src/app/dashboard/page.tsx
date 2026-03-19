@@ -3,6 +3,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
+import AuthGuard from "@/components/AuthGuard";
 
 export default function Dashboard() {
   const router = useRouter();
@@ -27,6 +28,7 @@ export default function Dashboard() {
   };
 
   return (
+    <AuthGuard>
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
       <div style={{ marginBottom: 48 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
@@ -134,5 +136,6 @@ export default function Dashboard() {
         </div>
       )}
     </div>
+    </AuthGuard>
   );
 }

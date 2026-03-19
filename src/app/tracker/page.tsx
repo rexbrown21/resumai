@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS, APP_STATUSES, STATUS_COLORS } from "@/lib/constants";
 import { Application } from "@/types";
+import AuthGuard from "@/components/AuthGuard";
 
 export default function Tracker() {
   const router = useRouter();
@@ -17,6 +18,7 @@ export default function Tracker() {
   };
 
   return (
+    <AuthGuard>
     <div style={{ padding: "100px 60px 60px", maxWidth: 1200, margin: "0 auto" }}>
       <button
         onClick={() => router.push("/dashboard")}
@@ -94,5 +96,6 @@ export default function Tracker() {
         ))}
       </div>
     </div>
+    </AuthGuard>
   );
 }
