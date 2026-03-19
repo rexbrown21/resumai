@@ -2,13 +2,14 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { supabase } from "@/lib/supabase";
 
 export default function Nav() {
   const { user, setUser, sessionLoaded } = useApp();
   const pathname = usePathname();
+  const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dropdownOpen, setDropdownOpen] = useState(false);
 
@@ -137,17 +138,20 @@ export default function Nav() {
                     <div style={{ fontSize: 13, fontWeight: 700, color: "var(--text)" }}>{user.name}</div>
                     <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{user.email}</div>
                   </div>
-                  <Link
-                    href="/profile"
-                    onClick={() => setDropdownOpen(false)}
+                  <button
+                    onClick={() => {
+                      setDropdownOpen(false);
+                      router.push("/profile");
+                    }}
                     style={{
-                      display: "block", padding: "10px 16px", fontSize: 13,
-                      color: "var(--text-dim)", textDecoration: "none",
+                      width: "100%", padding: "10px 16px", fontSize: 13,
+                      background: "transparent", border: "none",
+                      color: "var(--text-dim)", cursor: "pointer", textAlign: "left",
                       fontFamily: "'Syne', sans-serif",
                     }}
                   >
                     Edit profile
-                  </Link>
+                  </button>
                   <button
                     onClick={async () => {
                       setDropdownOpen(false);
@@ -171,7 +175,6 @@ export default function Nav() {
         </div>
       </nav>
 
-      {/* Click outside to close dropdown */}
       {dropdownOpen && (
         <div
           onClick={() => setDropdownOpen(false)}
