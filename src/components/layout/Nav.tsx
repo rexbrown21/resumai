@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
@@ -12,6 +12,7 @@ export default function Nav() {
   const router = useRouter();
   const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem("theme") as "dark" | "light" | null;
@@ -19,6 +20,17 @@ export default function Nav() {
       setTheme(saved);
       document.documentElement.setAttribute("data-theme", saved);
     }
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setDropdownOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
   const toggleTheme = () => {
@@ -110,9 +122,9 @@ export default function Nav() {
             {theme === "dark" ? "☀ Light" : "🌙 Dark"}
           </button>
 
-          {/* Avatar with dropdown — only when logged in */}
+          {/* Avatar with dropdown */}
           {sessionLoaded && user && (
-            <div style={{ position: "relative" }}>
+            <div ref={dropdownRef} style={{ position: "relative" }}>
               <div
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 style={{
@@ -139,8 +151,7 @@ export default function Nav() {
                     <div className="mono" style={{ fontSize: 11, color: "var(--text-muted)", marginTop: 2 }}>{user.email}</div>
                   </div>
                   <button
-                    onClick={(e: React.MouseEvent) => {
-                      e.stopPropagation();
+                    onClick={() => {
                       setDropdownOpen(false);
                       router.push("/profile");
                     }}
@@ -175,13 +186,6 @@ export default function Nav() {
           )}
         </div>
       </nav>
-
-      {dropdownOpen && (
-        <div
-          onClick={() => setDropdownOpen(false)}
-          style={{ position: "fixed", inset: 0, zIndex: 199 }}
-        />
-      )}
 
       <style>{`
         @media (max-width: 768px) {
