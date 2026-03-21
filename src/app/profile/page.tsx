@@ -228,11 +228,11 @@ export default function ProfilePage() {
                   </div>
                 ))}
               </div>
-              <label style={labelStyle}>BULLET POINTS (one per line)</label>
+              <label style={labelStyle}>WHAT DID YOU DO HERE? (AI will polish this)</label>
               <textarea
                 value={exp.bullets.join("\n")}
-                onChange={e => updateExperience(i, "bullets", e.target.value.split("\n"))}
-                placeholder="- Increased revenue by 40% through automation&#10;- Led cross-functional team of 8 engineers"
+                onChange={e => updateExperience(i, "bullets", [e.target.value])}
+                placeholder="Describe what you did in plain language. e.g. I resolved customer tickets, built automations with n8n, reduced manual work by 50%..."
                 style={{ ...inputStyle, height: 100, resize: "none", fontFamily: "'DM Mono', monospace", fontSize: 12 }}
               />
             </div>
@@ -265,11 +265,11 @@ export default function ProfilePage() {
                   <input value={proj.period} onChange={e => updateProject(i, "period", e.target.value)} style={inputStyle} />
                 </div>
               </div>
-              <label style={labelStyle}>BULLET POINTS (one per line)</label>
+              <label style={labelStyle}>WHAT DID YOU BUILD? (AI will polish this)</label>
               <textarea
                 value={proj.bullets.join("\n")}
-                onChange={e => updateProject(i, "bullets", e.target.value.split("\n"))}
-                placeholder="- Built with Next.js and Supabase&#10;- 500+ active users"
+                onChange={e => updateProject(i, "bullets", [e.target.value])}
+                placeholder="Describe what you built and the impact. e.g. Built an AI resume tool using Next.js and Supabase, got 4 users in the first week..."
                 style={{ ...inputStyle, height: 80, resize: "none", fontFamily: "'DM Mono', monospace", fontSize: 12 }}
               />
             </div>
