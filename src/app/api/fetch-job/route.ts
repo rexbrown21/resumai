@@ -6,10 +6,10 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 export async function POST(req: NextRequest) {
   let url = "";
   try {
-    const { url } = await req.json();
+    const body = await req.json();
+    url = body.url;
     if (!url) return NextResponse.json({ error: "URL required" }, { status: 400 });
 
-    // Fetch the page
     const response = await fetch(url, {
       headers: {
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
@@ -24,16 +24,14 @@ export async function POST(req: NextRequest) {
 
     const html = await response.text();
 
-    // Strip HTML tags to get raw text
     const text = html
       .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, "")
       .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, "")
       .replace(/<[^>]+>/g, " ")
       .replace(/\s+/g, " ")
       .trim()
-      .slice(0, 8000); // limit tokens
+      .slice(0, 8000);
 
-    // Use AI to extract just the job description
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
