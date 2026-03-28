@@ -35,6 +35,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           email: session.user.email || "",
           name: session.user.user_metadata?.name || session.user.email || "",
         });
+        // Identify user in PostHog
+        import("posthog-js").then(({ default: posthog }) => {
+          posthog.identify(session.user.id, {
+            email: session.user.email,
+            name: session.user.user_metadata?.name,
+          });
+        });
       }
       setSessionLoaded(true);
     });
@@ -45,6 +52,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
           id: session.user.id,
           email: session.user.email || "",
           name: session.user.user_metadata?.name || session.user.email || "",
+        });
+            // Identify user in PostHog
+        import("posthog-js").then(({ default: posthog }) => {
+          posthog.identify(session.user.id, {
+            email: session.user.email,
+            name: session.user.user_metadata?.name,
+          });
         });
       } else {
         setUserState(null);
