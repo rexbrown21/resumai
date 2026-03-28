@@ -3,6 +3,7 @@ import "./globals.css";
 import { AppProvider } from "@/lib/store";
 import ThemeToggle from "@/components/ThemeToggle";
 import { Analytics } from "@vercel/analytics/react";
+import PostHogProvider from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
   title: "ResumAI – Built to fit. Born to land.",
@@ -13,11 +14,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <AppProvider>
-          {children}
-          <ThemeToggle />
-          <Analytics />
-        </AppProvider>
+        <PostHogProvider>
+          <AppProvider>
+            {children}
+            <ThemeToggle />
+            <Analytics />
+          </AppProvider>
+        </PostHogProvider>
       </body>
     </html>
   );
