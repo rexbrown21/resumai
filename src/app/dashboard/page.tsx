@@ -5,6 +5,13 @@ import { COLORS } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 
+function getGreeting() {
+  const hour = new Date().getHours();
+  if (hour < 12) return "Good morning";
+  if (hour < 17) return "Good afternoon";
+  return "Good evening";
+}
+
 export default function Dashboard() {
   const router = useRouter();
   const { user, setUser, resumes, applications } = useApp();
@@ -35,7 +42,7 @@ export default function Dashboard() {
           <div>
             <div className="tag" style={{ marginBottom: 16 }}>Dashboard</div>
             <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
-              Good morning,{" "}
+              {getGreeting()},{" "}
               <span style={{ color: COLORS.accent }}>{user?.name || "there"}</span>
             </h1>
             <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, marginTop: 8 }}>
