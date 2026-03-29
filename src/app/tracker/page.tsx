@@ -4,17 +4,23 @@ import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS, APP_STATUSES, STATUS_COLORS } from "@/lib/constants";
 import { Application } from "@/types";
+import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
 
 export default function Tracker() {
   const router = useRouter();
-  const { applications, setApplications } = useApp();
+  const { user, applications, setApplications } = useApp();
   const [filter, setFilter] = useState<"All" | Application["status"]>("All");
 
   const filtered = filter === "All" ? applications : applications.filter(a => a.status === filter);
 
   const updateStatus = (id: number, status: Application["status"]) => {
     setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+  };
+
+  const deleteApplication = async (id: number) => {
+    await supabase.from("applications").delete().eq("id", id).eq("user_id", user!.id);
+    setApplications(prev => prev.filter(a => a.id !== id));
   };
 
   return (
@@ -91,6 +97,16 @@ export default function Tracker() {
               >
                 {APP_STATUSES.map(s => <option key={s}>{s}</option>)}
               </select>
+              <button
+                onClick={() => deleteApplication(app.id)}
+                style={{
+                  background: "transparent", border: `1px solid ${COLORS.border}`,
+                  color: COLORS.danger, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                  padding: "6px 12px", borderRadius: 2, cursor: "pointer",
+                }}
+              >
+                Delete
+              </button>
             </div>
           </div>
         ))}
