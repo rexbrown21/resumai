@@ -55,10 +55,17 @@ export default function LoginPage() {
             <input type="email" placeholder="Email address"
               value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
               style={{ padding: "14px 16px", borderRadius: 2, fontSize: 14 }} />
-            <input type="password" placeholder="Password"
-              value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
-              onKeyDown={e => e.key === "Enter" && handleSubmit()}
-              style={{ padding: "14px 16px", borderRadius: 2, fontSize: 14 }} />
+            <div>
+              <input type="password" placeholder="Password"
+                value={form.password} onChange={e => setForm({ ...form, password: e.target.value })}
+                onKeyDown={e => e.key === "Enter" && handleSubmit()}
+                style={{ padding: "14px 16px", borderRadius: 2, fontSize: 14, width: "100%" }} />
+              <div style={{ textAlign: "right", marginTop: 6 }}>
+                <Link href="/reset-password" className="mono" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
+                  Forgot password?
+                </Link>
+              </div>
+            </div>
 
             {error && <p className="mono" style={{ color: "var(--danger)", fontSize: 12 }}>{error}</p>}
 
