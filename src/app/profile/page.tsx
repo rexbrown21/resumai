@@ -91,7 +91,8 @@ export default function ProfilePage() {
     if (!user) return;
     await supabase
       .from("profiles_data")
-      .upsert({ user_id: user.id, profile: emptyProfile, updated_at: new Date().toISOString() });
+      .delete()
+      .eq("user_id", user.id);
     setProfile(emptyProfile);
     setConfirmClear(false);
   };
