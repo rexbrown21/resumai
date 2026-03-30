@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
@@ -9,23 +9,6 @@ export default function Nav() {
   const pathname = usePathname();
   const { user } = useApp();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute("data-theme", saved);
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    document.documentElement.setAttribute("data-theme", next);
-  };
-
   const navLinks = [
     { label: "Dashboard", href: "/dashboard" },
     { label: "Resumes", href: "/resumes" },
@@ -115,26 +98,6 @@ export default function Nav() {
               </button>
             </div>
           )}
-
-          {/* Theme toggle — ALWAYS visible */}
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: theme === "dark" ? "#1a1a1a" : "#e0e0d8",
-              border: "1px solid #555",
-              color: theme === "dark" ? "#f0f0f0" : "#111",
-              cursor: "pointer",
-              padding: "6px 12px",
-              borderRadius: 2,
-              fontSize: 13,
-              fontFamily: "'DM Mono', monospace",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            {theme === "dark" ? "☀ Light" : "🌙 Dark"}
-          </button>
 
           {/* User avatar — desktop only */}
           {user && (
