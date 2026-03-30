@@ -21,6 +21,7 @@ export default function Tailor() {
   const [step, setStep] = useState<Step>("input");
   const [result, setResult] = useState<TailorResult & { tailoredResume?: string } | null>(null);
   const [error, setError] = useState("");
+  const [profileMissing, setProfileMissing] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
   const [fetching, setFetching] = useState(false);
 
@@ -44,6 +45,11 @@ export default function Tailor() {
 
       if (!res.ok) {
         const data = await res.json();
+        if (res.status === 404 && mode === "generate") {
+          setProfileMissing(true);
+          setStep("input");
+          return;
+        }
         throw new Error(data.error || "API call failed");
       }
 
@@ -306,7 +312,7 @@ export default function Tailor() {
         {step === "input" && (
           <div style={{ display: "flex", gap: 2, marginBottom: 32 }}>
             <button
-              onClick={() => { setMode("tailor"); setError(""); }}
+              onClick={() => { setMode("tailor"); setError(""); setProfileMissing(false); }}
               style={{
                 padding: "10px 24px", borderRadius: 2, fontSize: 13, cursor: "pointer",
                 fontFamily: "'Syne', sans-serif", fontWeight: 600,
@@ -319,7 +325,7 @@ export default function Tailor() {
               ✦ Tailor existing resume
             </button>
             <button
-              onClick={() => { setMode("generate"); setError(""); }}
+              onClick={() => { setMode("generate"); setError(""); setProfileMissing(false); }}
               style={{
                 padding: "10px 24px", borderRadius: 2, fontSize: 13, cursor: "pointer",
                 fontFamily: "'Syne', sans-serif", fontWeight: 600,
@@ -483,6 +489,26 @@ export default function Tailor() {
                     }} />
                 </div>
               </>
+            )}
+
+            {profileMissing && (
+              <div style={{
+                border: `1px solid ${COLORS.accent}30`, background: `${COLORS.accent}06`,
+                padding: "32px", textAlign: "center",
+              }}>
+                <div style={{ fontSize: 28, marginBottom: 12 }}>👤</div>
+                <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>
+                  Your profile isn&apos;t set up yet
+                </h3>
+                <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, lineHeight: 1.7, marginBottom: 20 }}>
+                  Generate mode builds a CV from your saved experience.<br />
+                  Fill in your profile first — it only takes a few minutes.
+                </p>
+                <button className="btn-primary" onClick={() => router.push("/profile")}
+                  style={{ padding: "12px 28px", borderRadius: 2 }}>
+                  Complete your profile →
+                </button>
+              </div>
             )}
 
             {error && (
