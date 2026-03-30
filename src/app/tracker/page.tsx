@@ -63,11 +63,25 @@ export default function Tracker() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {filtered.length === 0 ? (
-          <div style={{ border: `2px dashed ${COLORS.border}`, padding: "80px", textAlign: "center" }}>
-            <p className="mono" style={{ color: COLORS.textMuted, fontSize: 14 }}>
-              No applications{filter !== "All" ? ` with status "${filter}"` : " yet"}.
-            </p>
-          </div>
+          filter === "All" && applications.length === 0 ? (
+            <div style={{ border: `2px dashed ${COLORS.border}`, padding: "80px 40px", textAlign: "center" }}>
+              <div style={{ fontSize: 32, marginBottom: 16 }}>📋</div>
+              <h3 style={{ fontSize: 20, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>No applications yet</h3>
+              <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>
+                Tailor a resume to a job and it will appear here automatically.<br />Track your pipeline from applied to offer.
+              </p>
+              <button className="btn-primary" onClick={() => router.push("/tailor")}
+                style={{ padding: "12px 28px", borderRadius: 2 }}>
+                Tailor your first resume →
+              </button>
+            </div>
+          ) : (
+            <div style={{ border: `2px dashed ${COLORS.border}`, padding: "60px", textAlign: "center" }}>
+              <p className="mono" style={{ color: COLORS.textMuted, fontSize: 14 }}>
+                No applications with status &ldquo;{filter}&rdquo;.
+              </p>
+            </div>
+          )
         ) : filtered.map(app => (
           <div key={app.id} className="card" style={{
             padding: "20px 28px", display: "flex",

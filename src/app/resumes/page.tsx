@@ -90,10 +90,16 @@ export default function Resumes() {
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
         {resumes.length === 0 ? (
-          <div style={{ border: `2px dashed ${COLORS.border}`, padding: "80px", textAlign: "center" }}>
-            <p className="mono" style={{ color: COLORS.textMuted, fontSize: 14 }}>
-              No resumes yet. Add your first version above.
+          <div style={{ border: `2px dashed ${COLORS.border}`, padding: "80px 40px", textAlign: "center" }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>📄</div>
+            <h3 style={{ fontSize: 20, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>No resumes yet</h3>
+            <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>
+              Add your first resume version to get started.<br />AI will use it to tailor applications to any job.
             </p>
+            <button className="btn-primary" onClick={() => setShowAdd(true)}
+              style={{ padding: "12px 28px", borderRadius: 2 }}>
+              + Add your first resume
+            </button>
           </div>
         ) : resumes.map(r => (
           <div key={r.id} className="card" style={{

@@ -85,35 +85,60 @@ export default function Dashboard() {
         <div className="card" style={{ padding: "40px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
             <div className="tag" style={{ marginBottom: 20 }}>Resume vault</div>
-            <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: COLORS.text }}>
-              {resumes.length} version{resumes.length !== 1 ? "s" : ""} stored
-            </h3>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-              {resumes.slice(0, 3).map(r => (
-                <div key={r.id} style={{
-                  display: "flex", justifyContent: "space-between", alignItems: "center",
-                  padding: "10px 14px", background: "#0a0a0a", border: `1px solid ${COLORS.border}`,
-                }}>
-                  <span style={{ fontSize: 13, color: COLORS.text }}>{r.name}</span>
-                  <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>{r.type}</span>
+            {resumes.length === 0 ? (
+              <div style={{ textAlign: "center", padding: "20px 0" }}>
+                <div style={{ fontSize: 28, marginBottom: 12 }}>📄</div>
+                <p className="mono" style={{ color: COLORS.textMuted, fontSize: 12, lineHeight: 1.7, marginBottom: 0 }}>
+                  No resumes stored yet.<br />Add one to start tailoring.
+                </p>
+              </div>
+            ) : (
+              <>
+                <h3 style={{ fontSize: 20, fontWeight: 700, marginBottom: 16, color: COLORS.text }}>
+                  {resumes.length} version{resumes.length !== 1 ? "s" : ""} stored
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                  {resumes.slice(0, 3).map(r => (
+                    <div key={r.id} style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center",
+                      padding: "10px 14px", background: "#0a0a0a", border: `1px solid ${COLORS.border}`,
+                    }}>
+                      <span style={{ fontSize: 13, color: COLORS.text }}>{r.name}</span>
+                      <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>{r.type}</span>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              </>
+            )}
           </div>
           <button className="btn-ghost" onClick={() => router.push("/resumes")}
             style={{ padding: "10px", borderRadius: 2, marginTop: 20, width: "100%" }}>
-            Manage resumes
+            {resumes.length === 0 ? "+ Add resume" : "Manage resumes"}
           </button>
         </div>
       </div>
 
-      {applications.length > 0 && (
-        <div className="card" style={{ padding: "40px", marginTop: 2 }}>
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
-            <div className="tag">Recent applications</div>
+      <div className="card" style={{ padding: "40px", marginTop: 2 }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+          <div className="tag">Recent applications</div>
+          {applications.length > 0 && (
             <button className="btn-ghost" onClick={() => router.push("/tracker")}
               style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>View all</button>
+          )}
+        </div>
+        {applications.length === 0 ? (
+          <div style={{ textAlign: "center", padding: "40px 20px" }}>
+            <div style={{ fontSize: 32, marginBottom: 16 }}>📋</div>
+            <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>No applications tracked yet</h3>
+            <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13, marginBottom: 24, lineHeight: 1.7 }}>
+              Tailor a resume to a job and your application<br />will be tracked here automatically.
+            </p>
+            <button className="btn-primary" onClick={() => router.push("/tailor")}
+              style={{ padding: "12px 28px", borderRadius: 2 }}>
+              Tailor your first resume →
+            </button>
           </div>
+        ) : (
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {applications.slice(0, 4).map(app => (
               <div key={app.id} style={{
@@ -140,8 +165,8 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
     </AuthGuard>
   );
