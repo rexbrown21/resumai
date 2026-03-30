@@ -14,8 +14,9 @@ export default function Tracker() {
 
   const filtered = filter === "All" ? applications : applications.filter(a => a.status === filter);
 
-  const updateStatus = (id: number, status: Application["status"]) => {
+  const updateStatus = async (id: number, status: Application["status"]) => {
     setApplications(prev => prev.map(a => a.id === id ? { ...a, status } : a));
+    await supabase.from("applications").update({ status }).eq("id", id).eq("user_id", user!.id);
   };
 
   const deleteApplication = async (id: number) => {
