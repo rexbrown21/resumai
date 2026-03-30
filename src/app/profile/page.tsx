@@ -57,6 +57,7 @@ export default function ProfilePage() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [confirmClear, setConfirmClear] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -84,6 +85,15 @@ export default function ProfilePage() {
 
     if (!error) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
     setSaving(false);
+  };
+
+  const clearProfile = async () => {
+    if (!user) return;
+    await supabase
+      .from("profiles_data")
+      .upsert({ user_id: user.id, profile: emptyProfile, updated_at: new Date().toISOString() });
+    setProfile(emptyProfile);
+    setConfirmClear(false);
   };
 
   const addExperience = () => setProfile(p => ({
@@ -172,14 +182,46 @@ export default function ProfilePage() {
             Fill this in once. AI uses it to generate tailored CVs from scratch.
           </p>
         </div>
-        <button
-          onClick={saveProfile}
-          disabled={saving}
-          className="btn-primary"
-          style={{ padding: "12px 28px", borderRadius: 2, marginTop: 24 }}
-        >
-          {saving ? "Saving..." : saved ? "✓ Saved" : "Save profile →"}
-        </button>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 24 }}>
+          <button
+            onClick={saveProfile}
+            disabled={saving}
+            className="btn-primary"
+            style={{ padding: "12px 28px", borderRadius: 2 }}
+          >
+            {saving ? "Saving..." : saved ? "✓ Saved" : "Save profile →"}
+          </button>
+          {confirmClear ? (
+            <div style={{ display: "flex", gap: 6 }}>
+              <button
+                onClick={clearProfile}
+                style={{
+                  flex: 1, padding: "8px", borderRadius: 2, fontSize: 12,
+                  fontFamily: "'DM Mono', monospace", cursor: "pointer",
+                  background: "transparent", border: `1px solid ${COLORS.danger}`,
+                  color: COLORS.danger,
+                }}
+              >
+                Yes, clear it
+              </button>
+              <button
+                onClick={() => setConfirmClear(false)}
+                className="btn-ghost"
+                style={{ flex: 1, padding: "8px", borderRadius: 2, fontSize: 12 }}
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setConfirmClear(true)}
+              className="btn-ghost"
+              style={{ padding: "8px 28px", borderRadius: 2, fontSize: 12, color: COLORS.textMuted }}
+            >
+              Clear profile
+            </button>
+          )}
+        </div>
       </div>
 
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
