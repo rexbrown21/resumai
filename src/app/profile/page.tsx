@@ -135,7 +135,25 @@ export default function ProfilePage() {
 
   return (
     <AuthGuard>
-    <div style={{ padding: "100px 60px 80px", maxWidth: 900, margin: "0 auto" }}>
+      <style>{`
+        .profile-wrap { padding: 100px 60px 80px; max-width: 900px; margin: 0 auto; }
+        .profile-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 48px; }
+        .profile-card { padding: 32px; }
+        .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .grid-2col-sm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .grid-skill { display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; margin-bottom: 10px; align-items: end; }
+        @media (max-width: 768px) {
+          .profile-wrap { padding: 80px 20px 60px; }
+          .profile-header { flex-direction: column; gap: 20px; margin-bottom: 32px; }
+          .profile-header .btn-primary { width: 100%; text-align: center; }
+          .profile-card { padding: 20px; }
+          .grid-2col { grid-template-columns: 1fr; }
+          .grid-2col-sm { grid-template-columns: 1fr; }
+          .grid-skill { grid-template-columns: 1fr; }
+          .grid-skill > button { justify-self: start; }
+        }
+      `}</style>
+    <div className="profile-wrap">
       <button onClick={() => router.push("/dashboard")} style={{
         background: "transparent", border: "none", color: COLORS.textDim,
         fontSize: 13, fontFamily: "'DM Mono', monospace", cursor: "pointer",
@@ -144,7 +162,7 @@ export default function ProfilePage() {
         &larr; Back to Dashboard
       </button>
 
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 48 }}>
+      <div className="profile-header">
         <div>
           <div className="tag" style={{ marginBottom: 16 }}>Experience Profile</div>
           <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
@@ -167,9 +185,9 @@ export default function ProfilePage() {
       <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
 
         {/* Personal Info */}
-        <div className="card" style={{ padding: "32px" }}>
+        <div className="card profile-card">
           <div className="tag" style={{ marginBottom: 24 }}>Personal info</div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+          <div className="grid-2col">
             {[
               { label: "FULL NAME", field: "name" as const },
               { label: "LOCATION", field: "location" as const },
@@ -200,7 +218,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Work Experience */}
-        <div className="card" style={{ padding: "32px" }}>
+        <div className="card profile-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div className="tag">Work experience</div>
             <button onClick={addExperience} className="btn-ghost" style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
@@ -215,7 +233,7 @@ export default function ProfilePage() {
                 <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>ROLE {i + 1}</span>
                 <button onClick={() => removeExperience(i)} style={{ background: "transparent", border: "none", color: COLORS.textMuted, cursor: "pointer", fontSize: 16 }}>×</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="grid-2col-sm">
                 {[
                   { label: "JOB TITLE", field: "title" as const },
                   { label: "COMPANY", field: "company" as const },
@@ -240,7 +258,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Projects */}
-        <div className="card" style={{ padding: "32px" }}>
+        <div className="card profile-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div className="tag">Projects</div>
             <button onClick={addProject} className="btn-ghost" style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
@@ -255,7 +273,7 @@ export default function ProfilePage() {
                 <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>PROJECT {i + 1}</span>
                 <button onClick={() => removeProject(i)} style={{ background: "transparent", border: "none", color: COLORS.textMuted, cursor: "pointer", fontSize: 16 }}>×</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 10 }}>
+              <div className="grid-2col-sm">
                 <div>
                   <label style={labelStyle}>PROJECT NAME</label>
                   <input value={proj.name} onChange={e => updateProject(i, "name", e.target.value)} style={inputStyle} />
@@ -277,7 +295,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Education */}
-        <div className="card" style={{ padding: "32px" }}>
+        <div className="card profile-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div className="tag">Education</div>
             <button onClick={addEducation} className="btn-ghost" style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
@@ -292,7 +310,7 @@ export default function ProfilePage() {
                 <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>EDUCATION {i + 1}</span>
                 <button onClick={() => removeEducation(i)} style={{ background: "transparent", border: "none", color: COLORS.textMuted, cursor: "pointer", fontSize: 16 }}>×</button>
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+              <div className="grid-2col-sm">
                 {[
                   { label: "DEGREE", field: "degree" as const },
                   { label: "SCHOOL", field: "school" as const },
@@ -311,7 +329,7 @@ export default function ProfilePage() {
         </div>
 
         {/* Skills */}
-        <div className="card" style={{ padding: "32px" }}>
+        <div className="card profile-card">
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
             <div className="tag">Skills</div>
             <button onClick={addSkill} className="btn-ghost" style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
@@ -324,7 +342,7 @@ export default function ProfilePage() {
           {profile.skills.length === 0 ? (
             <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>No skills added yet.</p>
           ) : profile.skills.map((skill, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 2fr auto", gap: 10, marginBottom: 10, alignItems: "end" }}>
+            <div key={i} className="grid-skill">
               <div>
                 <label style={labelStyle}>CATEGORY</label>
                 <input value={skill.category} onChange={e => updateSkill(i, "category", e.target.value)} placeholder="Languages" style={inputStyle} />
