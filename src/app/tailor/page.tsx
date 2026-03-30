@@ -35,7 +35,7 @@ export default function Tailor() {
       const endpoint = mode === "generate" ? "/api/generate-cv" : "/api/tailor";
       const body = mode === "generate"
         ? { jobDescription: jobDesc, userId: user?.id }
-        : { jobDescription: jobDesc, resumeText, resumeName: selectedResume?.name || "Resume" };
+        : { jobDescription: jobDesc, resumeText, resumeName: selectedResume?.name || "Resume", resumeId: selectedResume?.id };
 
       const res = await fetch(endpoint, {
         method: "POST",

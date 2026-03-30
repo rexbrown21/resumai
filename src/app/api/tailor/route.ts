@@ -1,5 +1,11 @@
 import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -7,7 +13,7 @@ const groq = new Groq({
 
 export async function POST(req: NextRequest) {
   try {
-    const { jobDescription, resumeText, resumeName } = await req.json();
+    const { jobDescription, resumeText, resumeName, resumeId } = await req.json();
 
     if (!jobDescription || !resumeText) {
       return NextResponse.json(
@@ -101,6 +107,18 @@ ${resumeText}`,
     const text = completion.choices[0].message.content || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
+
+    if (resumeId) {
+      const { data: resume } = await supabaseAdmin
+        .from("resumes")
+        .select("tailored_count")
+        .eq("id", resumeId)
+        .single();
+      await supabaseAdmin
+        .from("resumes")
+        .update({ tailored_count: (resume?.tailored_count ?? 0) + 1 })
+        .eq("id", resumeId);
+    }
 
     return NextResponse.json(parsed);
   } catch (error) {
