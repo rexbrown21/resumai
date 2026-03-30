@@ -10,17 +10,8 @@ export default function Nav() {
   const { user, setUser, sessionLoaded } = useApp();
   const pathname = usePathname();
   const router = useRouter();
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const saved = localStorage.getItem("theme") as "dark" | "light" | null;
-    if (saved) {
-      setTheme(saved);
-      document.documentElement.setAttribute("data-theme", saved);
-    }
-  }, []);
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -32,13 +23,6 @@ export default function Nav() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    localStorage.setItem("theme", next);
-    document.documentElement.setAttribute("data-theme", next);
-  };
 
   const navLinks = [
     { href: "/dashboard", label: "Dashboard" },
@@ -101,26 +85,6 @@ export default function Nav() {
               </Link>
             </div>
           )}
-
-          {/* Theme toggle */}
-          <button
-            onClick={toggleTheme}
-            style={{
-              background: theme === "dark" ? "#1a1a1a" : "#e0e0d8",
-              border: "1px solid #555",
-              color: theme === "dark" ? "#f0f0f0" : "#111",
-              cursor: "pointer",
-              padding: "6px 12px",
-              borderRadius: 2,
-              fontSize: 13,
-              fontFamily: "'DM Mono', monospace",
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-            }}
-          >
-            {theme === "dark" ? "☀ Light" : "🌙 Dark"}
-          </button>
 
           {/* Avatar with dropdown */}
           {sessionLoaded && user && (

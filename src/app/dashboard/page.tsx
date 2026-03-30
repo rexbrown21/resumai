@@ -101,7 +101,7 @@ export default function Dashboard() {
                   {resumes.slice(0, 3).map(r => (
                     <div key={r.id} style={{
                       display: "flex", justifyContent: "space-between", alignItems: "center",
-                      padding: "10px 14px", background: "#0a0a0a", border: `1px solid ${COLORS.border}`,
+                      padding: "10px 14px", background: "var(--surface-2)", border: `1px solid ${COLORS.border}`,
                     }}>
                       <span style={{ fontSize: 13, color: COLORS.text }}>{r.name}</span>
                       <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>{r.type}</span>
@@ -142,7 +142,7 @@ export default function Dashboard() {
           <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
             {applications.slice(0, 4).map(app => (
               <div key={app.id} style={{
-                background: "#0a0a0a", border: `1px solid ${COLORS.border}`,
+                background: "var(--surface-2)", border: `1px solid ${COLORS.border}`,
                 padding: "14px 20px", display: "flex", alignItems: "center",
                 justifyContent: "space-between",
               }}>
