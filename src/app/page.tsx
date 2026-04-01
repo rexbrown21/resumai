@@ -298,9 +298,17 @@ export default function LandingPage() {
             }} />
             <span style={{ fontWeight: 800, fontSize: 14 }}>RESUMAI</span>
           </div>
-          <span className="mono" style={{ color: "var(--text-muted)", fontSize: 11 }}>
-            © 2025 · Built with Groq + Llama 3.3 · Made for Africa
-          </span>
+          <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
+            <span className="mono" style={{ color: "var(--text-muted)", fontSize: 11 }}>
+              © 2025 · Built with Groq + Llama 3.3 · Made for Africa
+            </span>
+            <Link href="/terms" className="mono" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
+              Terms
+            </Link>
+            <Link href="/privacy" className="mono" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
+              Privacy
+            </Link>
+          </div>
         </footer>
       </div>
 
