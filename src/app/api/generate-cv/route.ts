@@ -1,23 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
-import Groq from "groq-sdk";
+import Anthropic from "@anthropic-ai/sdk";
 import { createClient } from "@supabase/supabase-js";
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
+);
 
 export async function POST(req: NextRequest) {
   try {
     const { jobDescription, userId } = await req.json();
 
     if (!jobDescription || !userId) {
-      return NextResponse.json({ error: "Job description and user ID required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "Job description and user ID required" },
+        { status: 400 }
+      );
     }
 
-    // Fetch user profile from Supabase
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    );
-
+    // Fetch user profile
     const { data, error } = await supabase
       .from("profiles_data")
       .select("profile")
@@ -25,25 +28,51 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error || !data?.profile) {
-      return NextResponse.json({ error: "Profile not found. Please complete your profile first." }, { status: 404 });
+      return NextResponse.json(
+        { error: "Profile not found. Please complete your profile first." },
+        { status: 404 }
+      );
     }
 
     const profile = data.profile;
 
-    const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
-      messages: [
-        {
-          role: "system",
-          content: `You are an expert ATS resume writer. Given a candidate's experience profile and a job description, generate a complete, polished, ATS-optimized resume tailored specifically for that job.
+    const systemPrompt = `You are a world-class ATS resume writer and career strategist. Your job is to transform a candidate's raw experience into a powerful, one-page ATS-optimized resume that gets past automated screening systems and impresses human recruiters.
 
-RULES:
-1. Use ONLY information from the candidate's profile — never invent experience
-2. Rewrite the candidate's raw descriptions into strong, quantified resume bullets
-3. Prioritize and reorder experience to match the job description
-4. Use keywords from the job description naturally throughout
-5. Keep the candidate's authentic voice
-6. Respond ONLY with valid JSON — no markdown, no backticks, no explanation
+CORE RULES:
+1. NEVER exceed one page — this is non-negotiable. Cut ruthlessly if needed.
+2. NEVER invent experience — only use what the candidate provided
+3. ALWAYS rewrite everything dynamically — never copy raw text from the profile
+4. ALWAYS start every bullet with a strong action verb (Led, Built, Engineered, Drove, Optimized, Reduced, Increased, Designed, Implemented, Automated)
+5. ALWAYS quantify impact where possible — add percentages, numbers, timeframes
+6. ALWAYS inject keywords from the job description naturally into bullets
+7. NEVER use weak phrases like "responsible for", "helped with", "worked on"
+8. Keep bullets to ONE line maximum — tight, punchy, impactful
+9. Maximum 3-4 bullets per role — prioritize most relevant to the JD
+10. Maximum 3 roles in experience section — most recent and relevant only
+11. Summary must be 2 sentences maximum — tailored to the exact role
+12. Skills section must use keywords directly from the job description
+
+ATS FORMATTING RULES:
+- Use standard section headers: Professional Summary, Work Experience, Projects, Education, Skills
+- No tables, no columns, no graphics, no special characters except hyphens and pipes
+- Consistent date format: Mon YYYY - Mon YYYY
+- Company name and title on same line separated by em dash
+- Location and period on next line
+- No photos, no colors, no icons
+
+TRANSFORMATION RULES:
+- Raw input: "I resolved customer tickets and helped with automation"
+- Output: "Resolved 100+ customer support tickets achieving 95% satisfaction rate while automating repetitive workflows using n8n"
+
+- Raw input: "built a bot for dry cleaning"
+- Output: "Engineered AI-powered customer service bot using GPT-4o and n8n, reducing response time from hours to seconds"
+
+- Raw input: "worked on CI/CD pipeline"
+- Output: "Built and deployed Kubernetes CI/CD pipeline cutting deployment time by 80% across 3 production environments"
+
+The final resume must read like it was written by a senior recruiter at McKinsey — precise, impactful, keyword-rich, and impossible to ignore.
+
+Respond ONLY with valid JSON — no markdown, no backticks, no explanation outside the JSON.
 
 Respond in this exact JSON format:
 {
@@ -51,33 +80,33 @@ Respond in this exact JSON format:
   "matchScore": <number 0-100>,
   "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
   "suggestions": [
-    "What was changed or emphasized for this role",
-    "What was reordered or highlighted",
-    "What keywords were added"
+    "Specific transformation made and why it strengthens the resume",
+    "Specific keyword injected and where",
+    "Specific cut made to keep it one page"
   ],
   "structured": {
     "name": "Full Name",
     "contact": "City, Country | phone | email | linkedin | github",
-    "summary": "2-3 sentence professional summary tailored to the job",
+    "summary": "One powerful sentence about who they are. One sentence about what they bring to this specific role.",
     "experience": [
       {
         "title": "Job Title",
         "company": "Company Name",
         "location": "City, Country",
-        "period": "Month Year - Month Year",
+        "period": "Mon YYYY - Mon YYYY",
         "bullets": [
-          "Strong action-verb bullet with quantified impact",
-          "Strong action-verb bullet with quantified impact"
+          "Action verb + what you did + quantified impact",
+          "Action verb + what you did + quantified impact",
+          "Action verb + what you did + quantified impact"
         ]
       }
     ],
     "projects": [
       {
         "name": "Project Name",
-        "period": "Year",
+        "period": "YYYY",
         "bullets": [
-          "What was built and the impact",
-          "Technologies used"
+          "Action verb + what you built + tech stack + impact"
         ]
       }
     ],
@@ -86,19 +115,17 @@ Respond in this exact JSON format:
         "degree": "Degree Name",
         "school": "School Name",
         "location": "City, Country",
-        "period": "Year - Year",
-        "gpa": "4.37/5"
+        "period": "YYYY - YYYY",
+        "gpa": "X.XX/5"
       }
     ],
     "skills": {
       "Category": "skill1, skill2, skill3"
     }
   }
-}`,
-        },
-        {
-          role: "user",
-          content: `JOB DESCRIPTION:
+}`;
+
+    const userPrompt = `JOB DESCRIPTION:
 ${jobDescription}
 
 CANDIDATE PROFILE:
@@ -128,20 +155,46 @@ ${edu.degree} — ${edu.school}, ${edu.location} (${edu.period}) GPA: ${edu.gpa}
 `).join("\n")}
 
 SKILLS:
-${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}`,
+${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}`;
+
+    const message = await anthropic.messages.create({
+      model: "claude-haiku-4-5",
+      max_tokens: 4096,
+      messages: [
+        {
+          role: "user",
+          content: `${systemPrompt}\n\n${userPrompt}`,
         },
       ],
-      temperature: 0.7,
-      max_tokens: 4096,
     });
 
-    const text = completion.choices[0].message.content || "";
+    // Extract usage for cost tracking
+    const inputTokens = message.usage.input_tokens;
+    const outputTokens = message.usage.output_tokens;
+    const costUsd =
+      (inputTokens / 1_000_000) * 0.25 +
+      (outputTokens / 1_000_000) * 1.25;
+
+    // Log usage to Supabase
+    await supabase.from("cv_generation_logs").insert({
+      user_id: userId,
+      input_tokens: inputTokens,
+      output_tokens: outputTokens,
+      cost_usd: costUsd,
+      model: "claude-haiku-4-5",
+    });
+
+    const text =
+      message.content[0].type === "text" ? message.content[0].text : "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Generate CV error:", error);
-    return NextResponse.json({ error: "Failed to generate CV" }, { status: 500 });
+    return NextResponse.json(
+      { error: "Failed to generate CV" },
+      { status: 500 }
+    );
   }
 }
