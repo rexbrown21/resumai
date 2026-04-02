@@ -90,150 +90,178 @@ export default function Tailor() {
     if (!result) return;
 
     import("jspdf").then(({ jsPDF }) => {
-      const doc = new jsPDF();
+      const doc = new jsPDF({ format: "a4", unit: "mm" });
       const pageWidth = doc.internal.pageSize.getWidth();
-      const margin = 20;
+      const pageHeight = doc.internal.pageSize.getHeight();
+
+      // ATS standard margins — tight but readable
+      const margin = 12;
       const maxWidth = pageWidth - margin * 2;
-      let y = 20;
+      let y = 14;
+
+      // Line height constants — tight for one page
+      const lineHeightBody = 4.2;
+      const lineHeightSm = 3.8;
+      const sectionGap = 3;
+      const bulletGap = 3.8;
+      const roleGap = 2;
 
       const checkPage = () => {
-        if (y > 275) { doc.addPage(); y = 20; }
+        // Warn if overflowing but don't add page — force one page
+        if (y > pageHeight - 10) {
+          y = pageHeight - 10;
+        }
       };
 
       const addSectionHeader = (title: string) => {
-        y += 4;
+        y += sectionGap;
         checkPage();
-        doc.setFontSize(10);
+        doc.setFontSize(9.5);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(title.toUpperCase(), margin, y);
-        y += 3;
+        y += 2.5;
         doc.setDrawColor(0, 0, 0);
         doc.line(margin, y, pageWidth - margin, y);
-        y += 6;
+        y += 4;
       };
 
       const s = result.structured;
 
       if (s) {
-        doc.setFontSize(18);
+        // Name — prominent but not oversized
+        doc.setFontSize(15);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(s.name, margin, y);
-        y += 7;
+        y += 5.5;
 
-        doc.setFontSize(9);
+        // Contact line
+        doc.setFontSize(8.5);
         doc.setFont("helvetica", "normal");
-        doc.setTextColor(80, 80, 80);
+        doc.setTextColor(60, 60, 60);
         const contactLines = doc.splitTextToSize(s.contact, maxWidth);
         contactLines.forEach((line: string) => {
           checkPage();
           doc.text(line, margin, y);
-          y += 4;
+          y += lineHeightSm;
         });
-        y += 2;
+        y += 1.5;
 
+        // Divider
         doc.setDrawColor(0, 0, 0);
         doc.line(margin, y, pageWidth - margin, y);
-        y += 8;
+        y += 4;
 
+        // Summary
         addSectionHeader("Professional Summary");
-        doc.setFontSize(10);
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(0, 0, 0);
         const summaryLines = doc.splitTextToSize(s.summary, maxWidth);
         summaryLines.forEach((line: string) => {
           checkPage();
           doc.text(line, margin, y);
-          y += 5;
+          y += lineHeightBody;
         });
 
+        // Experience
         if (s.experience?.length > 0) {
           addSectionHeader("Work Experience");
-          s.experience.forEach((exp: any) => {
+          s.experience.forEach((exp: any, idx: number) => {
             checkPage();
-            doc.setFontSize(11);
+
+            // Title — Company on same line
+            doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 0, 0);
-            doc.text(`${exp.title} - ${exp.company}`, margin, y);
-            y += 5;
+            doc.text(`${exp.title} — ${exp.company}`, margin, y);
+            y += 4;
 
+            // Location | Period
             checkPage();
-            doc.setFontSize(9);
+            doc.setFontSize(8.5);
             doc.setFont("helvetica", "italic");
-            doc.setTextColor(100, 100, 100);
+            doc.setTextColor(90, 90, 90);
             doc.text(`${exp.location} | ${exp.period}`, margin, y);
-            y += 5;
+            y += 4;
 
+            // Bullets
             exp.bullets?.forEach((bullet: string) => {
-              doc.setFontSize(10);
+              doc.setFontSize(9);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              const lines = doc.splitTextToSize(`- ${bullet}`, maxWidth - 4);
+              const lines = doc.splitTextToSize(`\u2022 ${bullet}`, maxWidth - 4);
               lines.forEach((line: string) => {
                 checkPage();
                 doc.text(line, margin + 2, y);
-                y += 5;
+                y += bulletGap;
               });
             });
-            y += 3;
+
+            if (idx < s.experience.length - 1) y += roleGap;
           });
         }
 
+        // Projects
         if (s.projects?.length > 0) {
           addSectionHeader("Projects");
-          s.projects.forEach((proj: any) => {
+          s.projects.forEach((proj: any, idx: number) => {
             checkPage();
-            doc.setFontSize(11);
+            doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 0, 0);
             doc.text(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, margin, y);
-            y += 5;
+            y += 4;
 
             proj.bullets?.forEach((bullet: string) => {
-              doc.setFontSize(10);
+              doc.setFontSize(9);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              const lines = doc.splitTextToSize(`- ${bullet}`, maxWidth - 4);
+              const lines = doc.splitTextToSize(`\u2022 ${bullet}`, maxWidth - 4);
               lines.forEach((line: string) => {
                 checkPage();
                 doc.text(line, margin + 2, y);
-                y += 5;
+                y += bulletGap;
               });
             });
-            y += 3;
+
+            if (idx < s.projects.length - 1) y += roleGap;
           });
         }
 
+        // Education
         if (s.education?.length > 0) {
           addSectionHeader("Education");
           s.education.forEach((edu: any) => {
             checkPage();
-            doc.setFontSize(11);
+            doc.setFontSize(10);
             doc.setFont("helvetica", "bold");
             doc.setTextColor(0, 0, 0);
             doc.text(edu.school, margin, y);
-            y += 5;
-
-            checkPage();
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "normal");
-            doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y);
             y += 4;
 
             checkPage();
             doc.setFontSize(9);
-            doc.setTextColor(100, 100, 100);
+            doc.setFont("helvetica", "normal");
+            doc.setTextColor(0, 0, 0);
+            doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y);
+            y += lineHeightSm;
+
+            checkPage();
+            doc.setFontSize(8.5);
+            doc.setTextColor(90, 90, 90);
             doc.text(`${edu.location} | ${edu.period}`, margin, y);
-            y += 7;
+            y += 4;
           });
         }
 
+        // Skills — inline format to save space
         if (s.skills) {
           addSectionHeader("Skills");
           Object.entries(s.skills).forEach(([category, value]) => {
             checkPage();
-            doc.setFontSize(10);
+            doc.setFontSize(9);
             doc.setTextColor(0, 0, 0);
             const skillLine = `${category}: ${value}`;
             const lines = doc.splitTextToSize(skillLine, maxWidth);
@@ -242,24 +270,25 @@ export default function Tailor() {
               else doc.setFont("helvetica", "normal");
               checkPage();
               doc.text(line, margin, y);
-              y += 5;
+              y += lineHeightBody;
             });
           });
         }
 
       } else {
-        doc.setFontSize(16);
+        // Fallback plain text
+        doc.setFontSize(14);
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(selectedResume?.name || "Tailored Resume", margin, y);
-        y += 10;
-        doc.setFontSize(10);
+        y += 8;
+        doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
         lines.forEach((line: string) => {
           checkPage();
           doc.text(line, margin, y);
-          y += 6;
+          y += lineHeightBody;
         });
       }
 
@@ -376,7 +405,6 @@ export default function Tailor() {
             </div>
 
             {mode === "generate" ? (
-              /* Generate mode — just JD + button */
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
                   <div className="card" style={{ padding: "32px" }}>
@@ -419,7 +447,6 @@ export default function Tailor() {
                 </button>
               </div>
             ) : (
-              /* Tailor mode — existing flow */
               <>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
                   <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
@@ -633,7 +660,7 @@ export default function Tailor() {
                         <div key={i} style={{ marginBottom: 14 }}>
                           <div style={{ fontWeight: 700, color: COLORS.text }}>{exp.title} — {exp.company}</div>
                           <div style={{ fontSize: 11, color: COLORS.textMuted, marginBottom: 6 }}>{exp.location} | {exp.period}</div>
-                          {exp.bullets?.map((b, j) => <div key={j}>- {b}</div>)}
+                          {exp.bullets?.map((b, j) => <div key={j}>• {b}</div>)}
                         </div>
                       ))}
                     </>
@@ -645,7 +672,7 @@ export default function Tailor() {
                       {result.structured.projects.map((proj, i) => (
                         <div key={i} style={{ marginBottom: 14 }}>
                           <div style={{ fontWeight: 700, color: COLORS.text }}>{proj.name} {proj.period && `(${proj.period})`}</div>
-                          {proj.bullets?.map((b, j) => <div key={j}>- {b}</div>)}
+                          {proj.bullets?.map((b, j) => <div key={j}>• {b}</div>)}
                         </div>
                       ))}
                     </>
