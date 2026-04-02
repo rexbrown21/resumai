@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import Anthropic from "@anthropic-ai/sdk";
+import Groq from "groq-sdk";
 import { createClient } from "@supabase/supabase-js";
 
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -36,7 +36,12 @@ export async function POST(req: NextRequest) {
 
     const profile = data.profile;
 
-    const systemPrompt = `You are a world-class ATS resume writer and career strategist. Your job is to transform a candidate's raw experience into a powerful, one-page ATS-optimized resume that gets past automated screening systems and impresses human recruiters.
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [
+        {
+          role: "system",
+          content: `You are a world-class ATS resume writer and career strategist. Your job is to transform a candidate's raw experience into a powerful, one-page ATS-optimized resume that gets past automated screening systems and impresses human recruiters.
 
 CORE RULES:
 1. NEVER exceed one page — this is non-negotiable. Cut ruthlessly if needed.
@@ -56,8 +61,6 @@ ATS FORMATTING RULES:
 - Use standard section headers: Professional Summary, Work Experience, Projects, Education, Skills
 - No tables, no columns, no graphics, no special characters except hyphens and pipes
 - Consistent date format: Mon YYYY - Mon YYYY
-- Company name and title on same line separated by em dash
-- Location and period on next line
 - No photos, no colors, no icons
 
 TRANSFORMATION RULES:
@@ -123,9 +126,11 @@ Respond in this exact JSON format:
       "Category": "skill1, skill2, skill3"
     }
   }
-}`;
-
-    const userPrompt = `JOB DESCRIPTION:
+}`,
+        },
+        {
+          role: "user",
+          content: `JOB DESCRIPTION:
 ${jobDescription}
 
 CANDIDATE PROFILE:
@@ -155,37 +160,14 @@ ${edu.degree} — ${edu.school}, ${edu.location} (${edu.period}) GPA: ${edu.gpa}
 `).join("\n")}
 
 SKILLS:
-${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}`;
-
-    const message = await anthropic.messages.create({
-      model: "claude-haiku-4-5",
-      max_tokens: 4096,
-      messages: [
-        {
-          role: "user",
-          content: `${systemPrompt}\n\n${userPrompt}`,
+${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}`,
         },
       ],
+      temperature: 0.7,
+      max_tokens: 4096,
     });
 
-    // Extract usage for cost tracking
-    const inputTokens = message.usage.input_tokens;
-    const outputTokens = message.usage.output_tokens;
-    const costUsd =
-      (inputTokens / 1_000_000) * 0.25 +
-      (outputTokens / 1_000_000) * 1.25;
-
-    // Log usage to Supabase
-    await supabase.from("cv_generation_logs").insert({
-      user_id: userId,
-      input_tokens: inputTokens,
-      output_tokens: outputTokens,
-      cost_usd: costUsd,
-      model: "claude-haiku-4-5",
-    });
-
-    const text =
-      message.content[0].type === "text" ? message.content[0].text : "";
+    const text = completion.choices[0].message.content || "";
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
