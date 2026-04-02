@@ -100,11 +100,11 @@ export default function Tailor() {
       let y = 14;
 
       // Line height constants — tight for one page
-      const lineHeightBody = 4.2;
-      const lineHeightSm = 3.8;
-      const sectionGap = 3;
-      const bulletGap = 3.8;
-      const roleGap = 2;
+      const lineHeightBody = 5.2;
+      const lineHeightSm = 4.5;
+      const sectionGap = 5;
+      const bulletGap = 4.8;
+      const roleGap = 4;
 
       const checkPage = () => {
         // Warn if overflowing but don't add page — force one page
@@ -134,7 +134,7 @@ export default function Tailor() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(s.name, margin, y);
-        y += 5.5;
+        y += 7;
 
         // Contact line
         doc.setFontSize(8.5);
@@ -146,12 +146,12 @@ export default function Tailor() {
           doc.text(line, margin, y);
           y += lineHeightSm;
         });
-        y += 1.5;
+        y += 3;
 
         // Divider
         doc.setDrawColor(0, 0, 0);
         doc.line(margin, y, pageWidth - margin, y);
-        y += 4;
+        y += 6;
 
         // Summary
         addSectionHeader("Professional Summary");
