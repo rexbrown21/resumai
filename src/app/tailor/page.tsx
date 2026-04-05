@@ -90,213 +90,190 @@ export default function Tailor() {
     if (!result) return;
 
     import("jspdf").then(({ jsPDF }) => {
-      const doc = new jsPDF({ format: "a4", unit: "mm" });
-      const pageWidth = doc.internal.pageSize.getWidth();
-      const pageHeight = doc.internal.pageSize.getHeight();
-
-      // ATS standard margins — tight but readable
-      const margin = 12;
-      const maxWidth = pageWidth - margin * 2;
-      let y = 14;
-
-      // Line height constants — tight for one page
-      const lineHeightBody = 5.5;
-      const lineHeightSm = 5.0;
-      const sectionGap = 5.5;
-      const bulletGap = 5.2;
-      const roleGap = 4;
-
-      const checkPage = () => {
-        // Warn if overflowing but don't add page — force one page
-        if (y > pageHeight - 10) {
-          y = pageHeight - 10;
-        }
-      };
-
-      const addSectionHeader = (title: string) => {
-        y += sectionGap;
-        checkPage();
-        doc.setFontSize(9.5);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        doc.text(title.toUpperCase(), margin, y);
-        y += 2.5;
-        doc.setDrawColor(0, 0, 0);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 4;
-      };
-
       const s = result.structured;
 
-      if (s) {
-        // Name — prominent but not oversized
-        doc.setFontSize(15);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        doc.text(s.name, margin, y);
-        y += 8;
+      const renderContent = (doc: any, multiplier: number): number => {
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 12;
+        const maxWidth = pageWidth - margin * 2;
+        let y = 14;
 
-        // Contact line
-        doc.setFontSize(8.5);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(60, 60, 60);
-        const contactLines = doc.splitTextToSize(s.contact, maxWidth);
-        contactLines.forEach((line: string) => {
-          checkPage();
-          doc.text(line, margin, y);
-          y += lineHeightSm;
-        });
-        y += 4;
+        // Base spacing constants — multiplied by scale factor
+        const lhBody = 4.2 * multiplier;
+        const lhSm = 3.8 * multiplier;
+        const secGap = 3.5 * multiplier;
+        const bGap = 4.0 * multiplier;
+        const rGap = 3.0 * multiplier;
 
-        // Divider
-        doc.setDrawColor(0, 0, 0);
-        doc.line(margin, y, pageWidth - margin, y);
-        y += 7;
+        const addSectionHeader = (title: string) => {
+          y += secGap;
+          doc.setFontSize(9.5);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 0, 0);
+          doc.text(title.toUpperCase(), margin, y);
+          y += 2.5;
+          doc.setDrawColor(0, 0, 0);
+          doc.line(margin, y, pageWidth - margin, y);
+          y += 4 * multiplier;
+        };
 
-        // Summary
-        addSectionHeader("Professional Summary");
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        doc.setTextColor(0, 0, 0);
-        const summaryLines = doc.splitTextToSize(s.summary, maxWidth);
-        summaryLines.forEach((line: string) => {
-          checkPage();
-          doc.text(line, margin, y);
-          y += 6;
-        });
+        if (s) {
+          doc.setFontSize(15);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 0, 0);
+          doc.text(s.name, margin, y);
+          y += 5.5 * multiplier;
 
-        // Experience
-        if (s.experience?.length > 0) {
-          addSectionHeader("Work Experience");
-          s.experience.forEach((exp: any, idx: number) => {
-            checkPage();
+          doc.setFontSize(8.5);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(60, 60, 60);
+          const contactLines = doc.splitTextToSize(s.contact, maxWidth);
+          contactLines.forEach((line: string) => {
+            doc.text(line, margin, y);
+            y += lhSm;
+          });
+          y += 1.5 * multiplier;
 
-            // Title — Company on same line
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 0, 0);
-            doc.text(`${exp.title} — ${exp.company}`, margin, y);
-            y += 4;
+          doc.setDrawColor(0, 0, 0);
+          doc.line(margin, y, pageWidth - margin, y);
+          y += 4 * multiplier;
 
-            // Location | Period
-            checkPage();
-            doc.setFontSize(8.5);
-            doc.setFont("helvetica", "italic");
-            doc.setTextColor(90, 90, 90);
-            doc.text(`${exp.location} | ${exp.period}`, margin, y);
-            y += 4;
+          addSectionHeader("Professional Summary");
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          doc.setTextColor(0, 0, 0);
+          const summaryLines = doc.splitTextToSize(s.summary, maxWidth);
+          summaryLines.forEach((line: string) => {
+            doc.text(line, margin, y);
+            y += lhBody;
+          });
 
-            // Bullets
-            exp.bullets?.forEach((bullet: string) => {
+          if (s.experience?.length > 0) {
+            addSectionHeader("Work Experience");
+            s.experience.forEach((exp: any, idx: number) => {
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(0, 0, 0);
+              doc.text(`${exp.title} — ${exp.company}`, margin, y);
+              y += 4 * multiplier;
+
+              doc.setFontSize(8.5);
+              doc.setFont("helvetica", "italic");
+              doc.setTextColor(90, 90, 90);
+              doc.text(`${exp.location} | ${exp.period}`, margin, y);
+              y += 4 * multiplier;
+
+              exp.bullets?.forEach((bullet: string) => {
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(0, 0, 0);
+                const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
+                lines.forEach((line: string) => {
+                  doc.text(line, margin + 2, y);
+                  y += bGap;
+                });
+              });
+
+              if (idx < s.experience.length - 1) y += rGap;
+            });
+          }
+
+          if (s.projects?.length > 0) {
+            addSectionHeader("Projects");
+            s.projects.forEach((proj: any, idx: number) => {
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(0, 0, 0);
+              doc.text(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, margin, y);
+              y += 4 * multiplier;
+
+              proj.bullets?.forEach((bullet: string) => {
+                doc.setFontSize(9);
+                doc.setFont("helvetica", "normal");
+                doc.setTextColor(0, 0, 0);
+                const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
+                lines.forEach((line: string) => {
+                  doc.text(line, margin + 2, y);
+                  y += bGap;
+                });
+              });
+
+              if (idx < s.projects.length - 1) y += rGap;
+            });
+          }
+
+          if (s.education?.length > 0) {
+            addSectionHeader("Education");
+            s.education.forEach((edu: any) => {
+              doc.setFontSize(10);
+              doc.setFont("helvetica", "bold");
+              doc.setTextColor(0, 0, 0);
+              doc.text(edu.school, margin, y);
+              y += 4 * multiplier;
+
               doc.setFontSize(9);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              const lines = doc.splitTextToSize(`\u2022 ${bullet}`, maxWidth - 4);
-              lines.forEach((line: string) => {
-                checkPage();
-                doc.text(line, margin + 2, y);
-                y += bulletGap;
-              });
+              doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y);
+              y += lhSm;
+
+              doc.setFontSize(8.5);
+              doc.setTextColor(90, 90, 90);
+              doc.text(`${edu.location} | ${edu.period}`, margin, y);
+              y += 4 * multiplier;
             });
+          }
 
-            if (idx < s.experience.length - 1) y += roleGap;
-          });
-        }
-
-        // Projects
-        if (s.projects?.length > 0) {
-          addSectionHeader("Projects");
-          s.projects.forEach((proj: any, idx: number) => {
-            checkPage();
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 0, 0);
-            doc.text(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, margin, y);
-            y += 4;
-
-            proj.bullets?.forEach((bullet: string) => {
+          if (s.skills) {
+            addSectionHeader("Skills");
+            Object.entries(s.skills).forEach(([category, value]) => {
               doc.setFontSize(9);
-              doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              const lines = doc.splitTextToSize(`\u2022 ${bullet}`, maxWidth - 4);
-              lines.forEach((line: string) => {
-                checkPage();
-                doc.text(line, margin + 2, y);
-                y += bulletGap;
+              const skillLine = `${category}: ${value}`;
+              const lines = doc.splitTextToSize(skillLine, maxWidth);
+              lines.forEach((line: string, i: number) => {
+                if (i === 0) doc.setFont("helvetica", "bold");
+                else doc.setFont("helvetica", "normal");
+                doc.text(line, margin, y);
+                y += lhBody;
               });
             });
-
-            if (idx < s.projects.length - 1) y += roleGap;
+          }
+        } else {
+          doc.setFontSize(14);
+          doc.setFont("helvetica", "bold");
+          doc.setTextColor(0, 0, 0);
+          doc.text(selectedResume?.name || "Tailored Resume", margin, y);
+          y += 8 * multiplier;
+          doc.setFontSize(9);
+          doc.setFont("helvetica", "normal");
+          const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
+          lines.forEach((line: string) => {
+            doc.text(line, margin, y);
+            y += lhBody;
           });
         }
 
-        // Education
-        if (s.education?.length > 0) {
-          addSectionHeader("Education");
-          s.education.forEach((edu: any) => {
-            checkPage();
-            doc.setFontSize(10);
-            doc.setFont("helvetica", "bold");
-            doc.setTextColor(0, 0, 0);
-            doc.text(edu.school, margin, y);
-            y += 4;
+        return y;
+      };
 
-            checkPage();
-            doc.setFontSize(9);
-            doc.setFont("helvetica", "normal");
-            doc.setTextColor(0, 0, 0);
-            doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y);
-            y += lineHeightSm;
+      // First pass — measure content height with multiplier 1.0
+      const measureDoc = new jsPDF({ format: "a4", unit: "mm" });
+      const contentHeight = renderContent(measureDoc, 1.0);
 
-            checkPage();
-            doc.setFontSize(8.5);
-            doc.setTextColor(90, 90, 90);
-            doc.text(`${edu.location} | ${edu.period}`, margin, y);
-            y += 6;
-          });
-        }
+      // Scale to fill page: 297mm - 14mm top - 10mm bottom = 273mm usable
+      const usableHeight = 273;
+      const scaleFactor = Math.min(usableHeight / contentHeight, 1.8);
 
-        // Skills — inline format to save space
-        if (s.skills) {
-          addSectionHeader("Skills");
-          Object.entries(s.skills).forEach(([category, value]) => {
-            checkPage();
-            doc.setFontSize(9);
-            doc.setTextColor(0, 0, 0);
-            const skillLine = `${category}: ${value}`;
-            const lines = doc.splitTextToSize(skillLine, maxWidth);
-            lines.forEach((line: string, i: number) => {
-              if (i === 0) doc.setFont("helvetica", "bold");
-              else doc.setFont("helvetica", "normal");
-              checkPage();
-              doc.text(line, margin, y);
-              y += lineHeightBody;
-            });
-          });
-        }
+      // Second pass — render with computed scale factor
+      const finalDoc = new jsPDF({ format: "a4", unit: "mm" });
+      renderContent(finalDoc, scaleFactor);
 
-      } else {
-        // Fallback plain text
-        doc.setFontSize(14);
-        doc.setFont("helvetica", "bold");
-        doc.setTextColor(0, 0, 0);
-        doc.text(selectedResume?.name || "Tailored Resume", margin, y);
-        y += 8;
-        doc.setFontSize(9);
-        doc.setFont("helvetica", "normal");
-        const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
-        lines.forEach((line: string) => {
-          checkPage();
-          doc.text(line, margin, y);
-          y += lineHeightBody;
-        });
-      }
-
-      doc.save(`${s?.name || selectedResume?.name || "resume"}-tailored.pdf`);
+      finalDoc.save(`${s?.name || selectedResume?.name || "resume"}-tailored.pdf`);
     });
   };
 
-  const logApplication = () => {
+    const logApplication = () => {
     if (!result) return;
     downloadResume();
     addApplication({
