@@ -100,10 +100,10 @@ export default function Tailor() {
       let y = 14;
 
       // Line height constants — tight for one page
-      const lineHeightBody = 5.2;
-      const lineHeightSm = 4.5;
-      const sectionGap = 5;
-      const bulletGap = 4.8;
+      const lineHeightBody = 5.5;
+      const lineHeightSm = 5.0;
+      const sectionGap = 5.5;
+      const bulletGap = 5.2;
       const roleGap = 4;
 
       const checkPage = () => {
@@ -134,7 +134,7 @@ export default function Tailor() {
         doc.setFont("helvetica", "bold");
         doc.setTextColor(0, 0, 0);
         doc.text(s.name, margin, y);
-        y += 7;
+        y += 8;
 
         // Contact line
         doc.setFontSize(8.5);
@@ -146,12 +146,12 @@ export default function Tailor() {
           doc.text(line, margin, y);
           y += lineHeightSm;
         });
-        y += 3;
+        y += 4;
 
         // Divider
         doc.setDrawColor(0, 0, 0);
         doc.line(margin, y, pageWidth - margin, y);
-        y += 6;
+        y += 7;
 
         // Summary
         addSectionHeader("Professional Summary");
@@ -162,7 +162,7 @@ export default function Tailor() {
         summaryLines.forEach((line: string) => {
           checkPage();
           doc.text(line, margin, y);
-          y += lineHeightBody;
+          y += 6;
         });
 
         // Experience
@@ -252,7 +252,7 @@ export default function Tailor() {
             doc.setFontSize(8.5);
             doc.setTextColor(90, 90, 90);
             doc.text(`${edu.location} | ${edu.period}`, margin, y);
-            y += 4;
+            y += 6;
           });
         }
 
