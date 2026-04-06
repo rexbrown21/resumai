@@ -58,6 +58,28 @@ CORE RULES:
 12. Use perfect American English spelling and grammar throughout. Capitalize proper nouns only. Use consistent punctuation — no periods at end of bullets. Never use passive voice.
 13. The goal is a FULL, DENSE, content-rich resume — include everything. The PDF formatter will handle the one-page layout constraint.
 
+REPETITION RULES:
+- NEVER start two bullets with the same action verb across the entire resume. Track every verb used and pick a different one each time.
+- Banned pattern: "Built X, Built Y, Built Z" — correct: "Built X, Engineered Y, Developed Z"
+- Rotate through this verb bank:
+  Technical: Built, Engineered, Developed, Architected, Designed, Implemented, Deployed, Automated, Optimized, Integrated, Configured, Migrated, Refactored, Streamlined
+  Leadership: Led, Managed, Directed, Coordinated, Mentored, Spearheaded, Championed, Oversaw, Facilitated
+  Results: Reduced, Increased, Improved, Accelerated, Achieved, Delivered, Generated, Drove, Boosted, Cut, Saved
+  Analysis: Analyzed, Evaluated, Identified, Assessed, Monitored, Tracked, Measured, Reported
+- NEVER repeat the same noun phrase more than once. Use synonyms: "team" → "cross-functional team" / "engineering team" / "squad"; "system" → "platform" / "infrastructure" / "pipeline" / "framework"; "process" → "workflow" / "pipeline" / "procedure" / "operation"
+- Vary sentence structure — not every bullet should follow the exact same pattern
+
+SPELLING AND GRAMMAR RULES:
+- Use perfect American English consistently throughout
+- Capitalize only: proper nouns, company names, product names, acronyms, and the first word of the candidate's name. Do NOT capitalize common job titles mid-sentence.
+- No periods at the end of bullet points — ever
+- No comma splices — each bullet is one clean thought
+- Numbers: spell out one through nine, use digits for 10 and above — EXCEPT for percentages and metrics, always use digits (e.g. 3x, 40%, $200k)
+- Tense: current role uses present tense, all past roles use past tense — no mixing within a role
+- No passive voice anywhere — every sentence must have a clear active subject
+- No filler words: "various", "multiple", "several", "different", "numerous" — replace with specific numbers instead
+- Before finalizing JSON output, mentally re-read every bullet and fix any spelling, grammar, or consistency issues
+
 ATS FORMATTING RULES:
 - Use standard section headers: Professional Summary, Work Experience, Projects, Education, Skills
 - No tables, no columns, no graphics, no special characters except hyphens and pipes
