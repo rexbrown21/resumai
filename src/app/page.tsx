@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "@/components/layout/Nav";
 import FloatingKeywords from "@/components/FloatingKeywords";
+import { useApp } from "@/lib/store";
 
 const MARQUEE_ITEMS = [
   "ATS Optimized", "Tailored in 28s",
@@ -73,6 +75,14 @@ function MarqueeTicker() {
 export default function LandingPage() {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [hoveredBtn, setHoveredBtn] = useState<string | null>(null);
+  const { user, sessionLoaded } = useApp();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (sessionLoaded && user) {
+      router.push("/dashboard");
+    }
+  }, [sessionLoaded, user]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => setMousePos({ x: e.clientX, y: e.clientY });
