@@ -5,13 +5,14 @@ import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
 import { Resume, TailorResult } from "@/types";
 import AuthGuard from "@/components/AuthGuard";
+import { supabase } from "@/lib/supabase";
 
 type Step = "input" | "analyzing" | "result";
 type Mode = "tailor" | "generate";
 
 export default function Tailor() {
   const router = useRouter();
-  const { resumes, addApplication, user } = useApp();
+  const { resumes, setResumes, addApplication, user } = useApp();
   const [mode, setMode] = useState<Mode>("tailor");
   const [jobDesc, setJobDesc] = useState("");
   const [company, setCompany] = useState("");
@@ -22,6 +23,7 @@ export default function Tailor() {
   const [result, setResult] = useState<TailorResult & { tailoredResume?: string } | null>(null);
   const [error, setError] = useState("");
   const [profileMissing, setProfileMissing] = useState(false);
+  const [savedToVault, setSavedToVault] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
   const [fetching, setFetching] = useState(false);
 
@@ -273,22 +275,59 @@ export default function Tailor() {
     });
   };
 
-    const logApplication = () => {
+    const logApplication = async () => {
     if (!result) return;
     downloadResume();
+
+    const date = new Date().toLocaleDateString();
+    const resumeName = (company && role)
+      ? `${company} — ${role}`
+      : `Generated CV — ${date}`;
+    const notes = `Auto-saved from ${mode === "generate" ? "CV generation" : "resume tailoring"} on ${date}`;
+
+    const { data } = await supabase
+      .from("resumes")
+      .insert({
+        user_id: user!.id,
+        name: resumeName,
+        type: result.jobType || "General",
+        notes,
+        tailored_count: 1,
+        structured_data: result.structured || null,
+      })
+      .select()
+      .single();
+
+    if (data) {
+      setResumes(prev => [{
+        id: data.id,
+        name: data.name,
+        type: data.type,
+        notes: data.notes || "",
+        uploaded: new Date(data.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        tailored: 1,
+      }, ...prev]);
+    }
+
+    setSavedToVault(true);
+
     addApplication({
       id: Date.now(),
       company: company || "Unnamed Company",
       role: role || "Unknown Role",
       status: "Applied",
       resumeUsed: mode === "generate" ? "Generated CV" : (selectedResume?.name || "Unknown"),
-      date: new Date().toLocaleDateString(),
+      date,
       matchScore: result.matchScore,
       notes: "",
     });
-    setStep("input");
-    setJobDesc(""); setCompany(""); setRole("");
-    setResult(null); setSelectedResume(null); setResumeText("");
+
+    setTimeout(() => {
+      setStep("input");
+      setJobDesc(""); setCompany(""); setRole("");
+      setResult(null); setSelectedResume(null); setResumeText("");
+      setSavedToVault(false);
+    }, 1500);
   };
 
   const backButton = (
@@ -602,7 +641,7 @@ export default function Tailor() {
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 32 }}>
                   <button className="btn-primary" onClick={logApplication} style={{ padding: "14px", borderRadius: 2 }}>
-                    Download & log application &rarr;
+                    {savedToVault ? "✓ Saved to vault & logged" : "Download & log application →"}
                   </button>
                   <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                     Download PDF only
