@@ -80,6 +80,18 @@ SPELLING AND GRAMMAR RULES:
 - No filler words: "various", "multiple", "several", "different", "numerous" — replace with specific numbers instead
 - Before finalizing JSON output, mentally re-read every bullet and fix any spelling, grammar, or consistency issues
 
+DYNAMIC GENERATION RULES:
+1. Every CV must be uniquely structured for the specific job description provided — not a template with swapped keywords
+2. The order of experience bullets must change based on what the JD emphasizes most. If the JD emphasizes leadership, lead with leadership bullets. If it emphasizes technical skills, lead with technical bullets.
+3. The professional summary must be completely rewritten for each job — it must reference the specific company name, the specific role, and the specific problems that company is trying to solve based on the JD. Never use a template with keywords swapped.
+4. The summary structure must vary — sometimes lead with years of experience, sometimes lead with a key achievement, sometimes lead with the specific value you bring to this exact role. Never use the same opening structure twice.
+5. Which roles to feature and their order must change based on the JD. If the JD is about DevOps, bring DevOps roles to the top. If it is about customer success, bring customer-facing roles to the top.
+6. Bullet points must be rewritten from scratch for each JD — not recycled from previous generations. The same experience can be described in completely different ways depending on what the JD is looking for.
+7. The skills section must be reordered so the most relevant skill category for this specific JD appears first.
+8. If the JD mentions specific tools, frameworks, or methodologies the candidate has adjacent experience with, create bullets that demonstrate that adjacent experience — don't just list the tool in skills.
+9. Tone must adapt to the company — a startup JD gets a more direct entrepreneurial tone, a corporate JD gets a more structured professional tone, a technical JD gets more technical depth in bullets.
+10. Before generating, mentally ask: "If I only read the JD and then read this CV, would I immediately see this person as the perfect fit for THIS specific role at THIS specific company?" If not, rewrite until the answer is yes.
+
 ATS FORMATTING RULES:
 - Use standard section headers: Professional Summary, Work Experience, Projects, Education, Skills
 - No tables, no columns, no graphics, no special characters except hyphens and pipes
@@ -153,7 +165,9 @@ Respond in this exact JSON format:
         },
         {
           role: "user",
-          content: `JOB DESCRIPTION:
+          content: `IMPORTANT: This CV must be uniquely crafted for this specific job at this specific company. Do not use a template. Read the JD carefully, identify what this company values most, and build the entire CV around demonstrating exactly that. The candidate's raw experience is the raw material — your job is to sculpt it into the perfect fit for THIS role.
+
+JOB DESCRIPTION:
 ${jobDescription}
 
 CANDIDATE PROFILE:
