@@ -24,6 +24,10 @@ export default function Tailor() {
   const [error, setError] = useState("");
   const [profileMissing, setProfileMissing] = useState(false);
   const [savedToVault, setSavedToVault] = useState(false);
+  const [coverLetter, setCoverLetter] = useState("");
+  const [coverLetterLoading, setCoverLetterLoading] = useState(false);
+  const [coverLetterError, setCoverLetterError] = useState("");
+  const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
   const [fetching, setFetching] = useState(false);
 
@@ -327,7 +331,87 @@ export default function Tailor() {
       setJobDesc(""); setCompany(""); setRole("");
       setResult(null); setSelectedResume(null); setResumeText("");
       setSavedToVault(false);
+      setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError("");
     }, 1500);
+  };
+
+  const generateCoverLetter = async () => {
+    setCoverLetterLoading(true);
+    setCoverLetterError("");
+    try {
+      const res = await fetch("/api/generate-cover-letter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          jobDescription: jobDesc,
+          userId: user?.id,
+          company,
+          role,
+          structured: result?.structured,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to generate");
+      setCoverLetter(data.coverLetter);
+      setCoverLetterGenerated(true);
+    } catch (err: any) {
+      setCoverLetterError(err.message);
+    } finally {
+      setCoverLetterLoading(false);
+    }
+  };
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(coverLetter);
+  };
+
+  const downloadCoverLetterPDF = () => {
+    import("jspdf").then(({ jsPDF }) => {
+      const doc = new jsPDF({ format: "a4", unit: "mm" });
+      const pageWidth = doc.internal.pageSize.getWidth();
+      const margin = 12;
+      const maxWidth = pageWidth - margin * 2;
+      let y = 20;
+      const name = result?.structured?.name || "";
+      const contact = result?.structured?.contact || "";
+      const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
+      doc.setFontSize(13);
+      doc.setFont("helvetica", "bold");
+      doc.setTextColor(0, 0, 0);
+      doc.text(name, margin, y);
+      y += 5.5;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(60, 60, 60);
+      doc.text(contact, margin, y);
+      y += 5;
+      doc.setFontSize(9);
+      doc.setTextColor(90, 90, 90);
+      const dateWidth = doc.getTextWidth(today);
+      doc.text(today, pageWidth - margin - dateWidth, y);
+      y += 10;
+      doc.setDrawColor(0, 0, 0);
+      doc.line(margin, y, pageWidth - margin, y);
+      y += 8;
+      doc.setFontSize(10.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      doc.text("Hiring Manager,", margin, y);
+      y += 8;
+      const bodyLines = doc.splitTextToSize(coverLetter, maxWidth);
+      bodyLines.forEach((line: string) => {
+        doc.text(line, margin, y);
+        y += 5.5;
+      });
+      y += 6;
+      doc.text("Sincerely,", margin, y);
+      y += 7;
+      const firstName = name.split(" ")[0];
+      doc.setFont("helvetica", "bold");
+      doc.text(firstName, margin, y);
+      const fileName = ((company || "cover-letter") + "-" + (role || "application")).replace(/\s+/g, "-").toLowerCase();
+      doc.save(fileName + "-cover-letter.pdf");
+    });
   };
 
   const backButton = (
@@ -646,7 +730,7 @@ export default function Tailor() {
                   <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                     Download PDF only
                   </button>
-                  <button className="btn-ghost" onClick={() => setStep("input")} style={{ padding: "12px", borderRadius: 2 }}>
+                  <button className="btn-ghost" onClick={() => { setStep("input"); setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
                     {mode === "generate" ? "Generate another" : "Tailor another"}
                   </button>
                 </div>
@@ -718,6 +802,59 @@ export default function Tailor() {
                 </div>
               </div>
             )}
+
+            <div className="card" style={{ padding: "32px", marginTop: 2 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 20 }}>
+                <div className="tag">Cover Letter</div>
+                {!coverLetterGenerated && (
+                  <button
+                    onClick={generateCoverLetter}
+                    disabled={coverLetterLoading}
+                    className="btn-primary"
+                    style={{ padding: "10px 24px", borderRadius: 2, fontSize: 13 }}
+                  >
+                    {coverLetterLoading ? "Writing..." : "Generate cover letter →"}
+                  </button>
+                )}
+              </div>
+              {!coverLetterGenerated && !coverLetterLoading && (
+                <p className="mono" style={{ color: COLORS.textDim, fontSize: 13 }}>
+                  Generate a tailored cover letter for this role using your profile and the job description.
+                </p>
+              )}
+              {coverLetterLoading && (
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <div style={{ width: 20, height: 20, borderRadius: "50%", border: "2px solid var(--border)", borderTopColor: "var(--accent)", animation: "spin 1s linear infinite" }} />
+                  <span className="mono" style={{ fontSize: 13, color: COLORS.textDim }}>Writing your cover letter...</span>
+                </div>
+              )}
+              {coverLetterError && (
+                <p className="mono" style={{ color: COLORS.danger, fontSize: 13 }}>{coverLetterError}</p>
+              )}
+              {coverLetterGenerated && coverLetter && (
+                <div>
+                  <div style={{
+                    background: "var(--surface-2)", border: "1px solid var(--border)",
+                    padding: "24px", borderRadius: 2, marginBottom: 16,
+                    fontFamily: "'DM Mono', monospace", fontSize: 13,
+                    color: COLORS.textDim, lineHeight: 1.8, whiteSpace: "pre-wrap",
+                  }}>
+                    {coverLetter}
+                  </div>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button onClick={copyToClipboard} className="btn-ghost" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
+                      Copy to clipboard
+                    </button>
+                    <button onClick={downloadCoverLetterPDF} className="btn-primary" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
+                      Download PDF →
+                    </button>
+                    <button onClick={() => { setCoverLetterGenerated(false); setCoverLetter(""); }} className="btn-ghost" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
+                      Regenerate
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>
