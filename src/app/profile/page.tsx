@@ -101,7 +101,10 @@ export default function ProfilePage() {
     setSaveError("");
     const { error } = await supabase
       .from("profiles_data")
-      .upsert({ user_id: user.id, profile, updated_at: new Date().toISOString() });
+      .upsert(
+        { user_id: user.id, profile, updated_at: new Date().toISOString() },
+        { onConflict: "user_id" }
+      );
 
     if (!error) {
       setSaved(true);
