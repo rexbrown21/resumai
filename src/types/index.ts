@@ -12,6 +12,15 @@ export interface Resume {
   uploaded: string;
   tailored: number;
   fileUrl?: string;
+  structured_data?: {
+    name: string;
+    contact: string;
+    summary: string;
+    experience: { title: string; company: string; location: string; period: string; bullets: string[] }[];
+    projects: { name: string; period: string; bullets: string[] }[];
+    education: { degree: string; school: string; location: string; period: string; gpa: string }[];
+    skills: Record<string, string>;
+  } | null;
 }
 
 export interface Application {

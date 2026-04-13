@@ -102,6 +102,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         uploaded: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         tailored: r.tailored_count || 0,
         fileUrl: r.file_url || undefined,
+        structured_data: r.structured_data || null,
       })));
     }
 
@@ -154,6 +155,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         notes: data.notes || "",
         uploaded: new Date(data.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         tailored: 0,
+        structured_data: null,
       }, ...prev]);
     }
   };
