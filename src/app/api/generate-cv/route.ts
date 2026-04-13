@@ -80,6 +80,36 @@ SPELLING AND GRAMMAR RULES:
 - No filler words: "various", "multiple", "several", "different", "numerous" — replace with specific numbers instead
 - Before finalizing JSON output, mentally re-read every bullet and fix any spelling, grammar, or consistency issues
 
+CROSS-SECTOR TAILORING RULES:
+1. Before generating, identify the sector of the job description: Technical (engineering, DevOps, data), Business (consulting, PM, operations), Creative (design, marketing, content), Finance (banking, fintech, accounting), or Hybrid.
+
+2. If the candidate's background is primarily technical but the JD is business/consulting/operations focused:
+   - Reframe technical achievements in business language
+   - "Built automation with n8n" becomes "Designed and deployed business process automation reducing operational overhead by X%"
+   - "Managed Kubernetes cluster" becomes "Owned end-to-end infrastructure reliability for systems serving X users"
+   - Lead with business impact first, technical method second
+   - Emphasize: cost savings, efficiency gains, stakeholder management, cross-functional collaboration, process improvement
+
+3. If the candidate's background is business but JD is technical:
+   - Surface any technical tools, platforms, or systems they have used even in non-technical roles
+   - Emphasize analytical skills, systems thinking, data usage
+   - Highlight any automation, tooling, or technical problem solving from their experience
+
+4. If applying for a graduate/entry-level programme regardless of background:
+   - Lead with academic achievement and GPA
+   - Emphasize leadership, teamwork, communication, adaptability
+   - Frame all experience as demonstrating professional readiness
+   - Highlight any client-facing or stakeholder management experience
+   - Tone should be ambitious and growth-oriented not senior
+
+5. Skills section must reflect the target sector:
+   - Business roles: add Business Analysis, Stakeholder Management, Process Improvement, Microsoft Office, Presentation Skills
+   - Consulting roles: add Structured Problem Solving, Client Engagement, Research & Analysis, Report Writing
+   - Technical roles: lead with languages and frameworks
+   - Always include skills the JD explicitly mentions if the candidate has adjacent experience
+
+6. The summary must explicitly bridge the candidate's background to the target role. If there is a sector mismatch, acknowledge the transferable skills directly. Example: "Mechatronics engineer with 2 years IT experience bringing a systems-thinking approach and proven track record of delivering measurable operational improvements to the PwC consulting practice."
+
 DYNAMIC GENERATION RULES:
 1. Every CV must be uniquely structured for the specific job description provided — not a template with swapped keywords
 2. The order of experience bullets must change based on what the JD emphasizes most. If the JD emphasizes leadership, lead with leadership bullets. If it emphasizes technical skills, lead with technical bullets.
