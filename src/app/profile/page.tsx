@@ -56,6 +56,10 @@ export default function ProfilePage() {
   const [profile, setProfile] = useState<ProfileData>(emptyProfile);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [saveError, setSaveError] = useState("");
+  const [hasUnsaved, setHasUnsaved] = useState(false);
+  const [lastSaved, setLastSaved] = useState<string | null>(null);
+  const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
 
@@ -64,26 +68,53 @@ export default function ProfilePage() {
     loadProfile();
   }, [user?.id]);
 
+  // Track unsaved changes after initial load
+  useEffect(() => {
+    if (profileLoaded) setHasUnsaved(true);
+  }, [profile]);
+
   const loadProfile = async () => {
     if (!user) return;
     const { data } = await supabase
       .from("profiles_data")
-      .select("profile")
+      .select("profile, updated_at")
       .eq("user_id", user.id)
       .single();
 
-    if (data?.profile) setProfile(data.profile);
+    if (data?.profile) {
+      setProfile(data.profile);
+      if (data.updated_at) {
+        setLastSaved(new Date(data.updated_at).toLocaleString("en-US", {
+          month: "short", day: "numeric", year: "numeric",
+          hour: "numeric", minute: "2-digit",
+        }));
+      }
+    }
     setLoading(false);
+    // Mark as loaded after a tick so the profile useEffect doesn't fire
+    setTimeout(() => setProfileLoaded(true), 50);
   };
 
   const saveProfile = async () => {
     if (!user) return;
     setSaving(true);
+    setSaveError("");
     const { error } = await supabase
       .from("profiles_data")
       .upsert({ user_id: user.id, profile, updated_at: new Date().toISOString() });
 
-    if (!error) { setSaved(true); setTimeout(() => setSaved(false), 3000); }
+    if (!error) {
+      setSaved(true);
+      setHasUnsaved(false);
+      setLastSaved(new Date().toLocaleString("en-US", {
+        month: "short", day: "numeric", year: "numeric",
+        hour: "numeric", minute: "2-digit",
+      }));
+      setTimeout(() => setSaved(false), 5000);
+    } else {
+      setSaveError("Save failed — try again");
+      setTimeout(() => setSaveError(""), 5000);
+    }
     setSaving(false);
   };
 
@@ -95,6 +126,8 @@ export default function ProfilePage() {
       .eq("user_id", user.id);
     setProfile(emptyProfile);
     setConfirmClear(false);
+    setLastSaved(null);
+    setHasUnsaved(false);
   };
 
   const addExperience = () => setProfile(p => ({
@@ -138,6 +171,13 @@ export default function ProfilePage() {
   const inputStyle = { width: "100%", padding: "10px 14px", borderRadius: 2, fontSize: 13 };
   const labelStyle = { fontSize: 11, fontFamily: "'DM Mono', monospace", color: COLORS.textMuted, marginBottom: 6, display: "block" as const, letterSpacing: "0.05em" };
 
+  const saveButtonStyle: React.CSSProperties = {
+    padding: "12px 28px", borderRadius: 2,
+    background: saveError ? COLORS.danger : saved ? COLORS.success : undefined,
+    color: (saveError || saved) ? "#080808" : undefined,
+    border: "none",
+  };
+
   if (loading) return (
     <div style={{ padding: "100px 60px", display: "flex", alignItems: "center", justifyContent: "center" }}>
       <p className="mono" style={{ color: COLORS.textDim }}>Loading profile...</p>
@@ -153,6 +193,11 @@ export default function ProfilePage() {
         .grid-2col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .grid-2col-sm { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .grid-skill { display: grid; grid-template-columns: 1fr 2fr auto; gap: 10px; margin-bottom: 10px; align-items: end; }
+        @keyframes fadeUp {
+          from { opacity: 0; transform: translateY(8px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .save-banner { animation: fadeUp 0.25s ease forwards; }
         @media (max-width: 768px) {
           .profile-wrap { padding: 80px 20px 60px; }
           .profile-header { flex-direction: column; gap: 20px; margin-bottom: 32px; }
@@ -173,24 +218,49 @@ export default function ProfilePage() {
         &larr; Back to Dashboard
       </button>
 
+      {/* Success banner */}
+      {saved && (
+        <div className="save-banner" style={{
+          background: `${COLORS.success}1a`,
+          border: `1px solid ${COLORS.success}4d`,
+          padding: "16px 24px", borderRadius: 2, marginBottom: 24,
+          fontFamily: "'DM Mono', monospace", fontSize: 13, color: COLORS.success,
+        }}>
+          ✓ Profile saved successfully — your CV generations will use this updated information
+        </div>
+      )}
+
       <div className="profile-header">
         <div>
           <div className="tag" style={{ marginBottom: 16 }}>Experience Profile</div>
-          <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
+          <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text, display: "flex", alignItems: "center", gap: 12 }}>
             Your profile
+            {hasUnsaved && (
+              <span style={{ width: 10, height: 10, borderRadius: "50%", background: "#f59e0b", display: "inline-block", flexShrink: 0, marginTop: 4 }} />
+            )}
           </h1>
           <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, marginTop: 8 }}>
             Fill this in once. AI uses it to generate tailored CVs from scratch.
           </p>
+          {hasUnsaved && (
+            <p className="mono" style={{ color: "#f59e0b", fontSize: 12, marginTop: 4 }}>
+              Unsaved changes
+            </p>
+          )}
+          {!hasUnsaved && lastSaved && (
+            <p className="mono" style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 4 }}>
+              Last saved {lastSaved}
+            </p>
+          )}
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 24 }}>
           <button
             onClick={saveProfile}
             disabled={saving}
-            className="btn-primary"
-            style={{ padding: "12px 28px", borderRadius: 2 }}
+            className={saved || saveError ? "" : "btn-primary"}
+            style={saveButtonStyle}
           >
-            {saving ? "Saving..." : saved ? "✓ Saved" : "Save profile →"}
+            {saving ? "Saving..." : saveError ? saveError : saved ? "✓ Saved" : "Save profile →"}
           </button>
           {confirmClear ? (
             <div style={{ display: "flex", gap: 6 }}>
@@ -399,8 +469,18 @@ export default function ProfilePage() {
           ))}
         </div>
 
-        <button onClick={saveProfile} disabled={saving} className="btn-primary" style={{ padding: "16px", borderRadius: 2, fontSize: 15 }}>
-          {saving ? "Saving..." : saved ? "✓ Profile saved" : "Save profile →"}
+        <button
+          onClick={saveProfile}
+          disabled={saving}
+          className={saved || saveError ? "" : "btn-primary"}
+          style={{
+            padding: "16px", borderRadius: 2, fontSize: 15,
+            background: saveError ? COLORS.danger : saved ? COLORS.success : undefined,
+            color: (saveError || saved) ? "#080808" : undefined,
+            border: "none", cursor: "pointer",
+          }}
+        >
+          {saving ? "Saving..." : saveError ? saveError : saved ? "✓ Profile saved" : "Save profile →"}
         </button>
       </div>
     </div>
