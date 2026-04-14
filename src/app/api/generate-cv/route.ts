@@ -58,16 +58,41 @@ CORE RULES:
 12. Use perfect American English spelling and grammar throughout. Capitalize proper nouns only. Use consistent punctuation — no periods at end of bullets. Never use passive voice.
 13. The goal is a FULL, DENSE, content-rich resume — include everything. The PDF formatter will handle the one-page layout constraint.
 
-REPETITION RULES:
-- NEVER start two bullets with the same action verb across the entire resume. Track every verb used and pick a different one each time.
-- Banned pattern: "Built X, Built Y, Built Z" — correct: "Built X, Engineered Y, Developed Z"
-- Rotate through this verb bank:
-  Technical: Built, Engineered, Developed, Architected, Designed, Implemented, Deployed, Automated, Optimized, Integrated, Configured, Migrated, Refactored, Streamlined
-  Leadership: Led, Managed, Directed, Coordinated, Mentored, Spearheaded, Championed, Oversaw, Facilitated
-  Results: Reduced, Increased, Improved, Accelerated, Achieved, Delivered, Generated, Drove, Boosted, Cut, Saved
-  Analysis: Analyzed, Evaluated, Identified, Assessed, Monitored, Tracked, Measured, Reported
-- NEVER repeat the same noun phrase more than once. Use synonyms: "team" → "cross-functional team" / "engineering team" / "squad"; "system" → "platform" / "infrastructure" / "pipeline" / "framework"; "process" → "workflow" / "pipeline" / "procedure" / "operation"
-- Vary sentence structure — not every bullet should follow the exact same pattern
+STRICT VERB RULES:
+1. Before writing any bullet, maintain a running list of every action verb already used in the resume.
+2. NEVER use the same action verb more than ONCE in the entire resume — not twice, not even in different sections.
+3. These verbs are BANNED entirely because they are overused across all resumes — never use them under any circumstance:
+   BANNED: Developed, Designed, Built, Implemented, Managed, Created, Utilized, Leveraged, Assisted, Supported, Helped, Worked, Responsible, Contributed
+4. Use ONLY verbs from these approved categories, each only once:
+
+   Infrastructure/Technical: Architected, Engineered, Deployed, Configured, Integrated, Migrated, Containerized, Provisioned, Automated, Optimized, Refactored, Streamlined, Scaled, Modernized, Instrumented
+   Leadership/Collaboration: Led, Spearheaded, Championed, Directed, Coordinated, Facilitated, Mentored, Partnered, Liaised, Unified, Mobilized
+   Analysis/Research: Analyzed, Evaluated, Identified, Assessed, Benchmarked, Modeled, Forecasted, Synthesized, Investigated, Audited, Mapped, Diagnosed, Quantified
+   Results/Impact: Reduced, Increased, Improved, Accelerated, Eliminated, Saved, Generated, Boosted, Cut, Transformed, Delivered, Achieved, Recovered, Resolved, Exceeded
+   Communication/Stakeholder: Presented, Documented, Authored, Published, Trained, Advised, Consulted, Negotiated, Pitched, Demonstrated
+
+5. After writing all bullets, do a final pass and verify that no verb appears more than once. If any verb is repeated, replace the duplicate with a synonym from the approved list.
+
+STRICT PHRASE RULES:
+1. Every bullet must be unique in structure and wording — no two bullets anywhere on the resume should share more than 3 consecutive words.
+2. NEVER repeat the same outcome phrase — if you say "achieving X% satisfaction rate" once, you cannot use "satisfaction rate" anywhere else on the resume.
+3. NEVER repeat the same metric description — if you used "50% reduction" in one bullet, use a different phrasing like "halved processing time" or "cut by half" elsewhere.
+4. NEVER mention the same tool, technology, or system more than once across all bullets — if n8n appears in one bullet it cannot appear in another bullet anywhere.
+5. Each role must tell a different story — if role 1 emphasizes automation, role 2 must emphasize a different theme like stakeholder management or technical depth.
+
+STRICT NUMBERS RULES:
+1. EVERY single bullet must contain at least one hard number.
+2. Acceptable number formats: percentages (40%), multipliers (3x), absolute numbers (100+ tickets), time savings (8 hours/week), scale (500,000 users), money ($200k), rankings (top 10%), team size (team of 8).
+3. If the candidate's raw notes contain no numbers for a specific achievement, use contextual estimation based on role seniority and company size — but keep it realistic and believable.
+4. NEVER use vague quantifiers: "several", "multiple", "various", "many", "numerous", "significant" — replace ALL of these with specific numbers.
+5. Numbers make bullets credible — aim for at least 2 numbers per role section total.
+
+FINAL QUALITY CHECK:
+Before returning the JSON output, do this mandatory check:
+- List every action verb used → confirm zero repeats
+- List every numeric metric used → confirm each bullet has one
+- List every unique phrase → confirm no phrase appears twice
+- If any check fails, rewrite the offending bullets before returning the response.
 
 SPELLING AND GRAMMAR RULES:
 - Use perfect American English consistently throughout
