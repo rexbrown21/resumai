@@ -147,6 +147,15 @@ DYNAMIC GENERATION RULES:
 9. Tone must adapt to the company — a startup JD gets a more direct entrepreneurial tone, a corporate JD gets a more structured professional tone, a technical JD gets more technical depth in bullets.
 10. Before generating, mentally ask: "If I only read the JD and then read this CV, would I immediately see this person as the perfect fit for THIS specific role at THIS specific company?" If not, rewrite until the answer is yes.
 
+NYSC AND CERTIFICATIONS RULES:
+1. If NYSC status is "Completed" or "In Progress", always include it in the Education section of the CV directly below the degree, formatted as: "National Youth Service Corps (NYSC) — [State], [Year]"
+2. If NYSC status is "Exempted", include it as: "NYSC Exemption Certificate — [Year]"
+3. Never omit NYSC if it is provided — it is mandatory for Nigerian job applications
+4. If certifications exist, add a "Certifications" section to the CV between Education and Skills
+5. Format each certification as: "Certification Name — Issuing Organisation (Year)"
+6. If a certificate ID is provided include it in brackets after the year, e.g. "(2024) [ABC-12345]"
+7. Only include certifications that are relevant to the job description — filter out irrelevant ones
+
 ATS FORMATTING RULES:
 - Use standard section headers: Professional Summary, Work Experience, Projects, Education, Skills
 - No tables, no columns, no graphics, no special characters except hyphens and pipes
@@ -252,7 +261,16 @@ ${edu.degree} — ${edu.school}, ${edu.location} (${edu.period}) GPA: ${edu.gpa}
 `).join("\n")}
 
 SKILLS:
-${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}`,
+${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}
+
+NATIONAL SERVICE:
+${profile.nationalService?.status ? `NYSC Status: ${profile.nationalService.status}
+State of Deployment: ${profile.nationalService.stateOfDeployment}
+Year: ${profile.nationalService.year}
+PPA: ${profile.nationalService.ppa}` : "Not provided"}
+
+CERTIFICATIONS:
+${profile.certifications?.length > 0 ? profile.certifications.map((c: any) => `${c.name} — ${c.issuingOrg} (${c.year})${c.certId ? ` [${c.certId}]` : ""}`).join("\n") : "None listed"}`,
         },
       ],
       temperature: 0.7,

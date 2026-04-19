@@ -39,6 +39,8 @@ interface ProfileData {
   experience: WorkExperience[];
   projects: Project[];
   education: Education[];
+  nationalService: { status: string; stateOfDeployment: string; year: string; ppa: string };
+  certifications: { name: string; issuingOrg: string; year: string; certId: string }[];
   skills: { category: string; values: string }[];
 }
 
@@ -47,6 +49,8 @@ const emptyProfile: ProfileData = {
   experience: [],
   projects: [],
   education: [],
+  nationalService: { status: "", stateOfDeployment: "", year: "", ppa: "" },
+  certifications: [],
   skills: [],
 };
 
@@ -162,6 +166,16 @@ export default function ProfilePage() {
 
   const removeEducation = (i: number) =>
     setProfile(p => ({ ...p, education: p.education.filter((_, idx) => idx !== i) }));
+
+  const addCertification = () => setProfile(p => ({
+    ...p, certifications: [...(p.certifications || []), { name: "", issuingOrg: "", year: "", certId: "" }]
+  }));
+
+  const updateCertification = (i: number, field: "name" | "issuingOrg" | "year" | "certId", value: string) =>
+    setProfile(p => ({ ...p, certifications: p.certifications.map((c, idx) => idx === i ? { ...c, [field]: value } : c) }));
+
+  const removeCertification = (i: number) =>
+    setProfile(p => ({ ...p, certifications: p.certifications.filter((_, idx) => idx !== i) }));
 
   const addSkill = () => setProfile(p => ({ ...p, skills: [...p.skills, { category: "", values: "" }] }));
 
@@ -439,6 +453,99 @@ export default function ProfilePage() {
                     <input value={edu[field]} onChange={e => updateEducation(i, field, e.target.value)} style={inputStyle} />
                   </div>
                 ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* National Service */}
+        <div className="card profile-card">
+          <div className="tag" style={{ marginBottom: 24 }}>NYSC</div>
+          <div className="grid-2col-sm" style={{ marginBottom: profile.nationalService?.status ? 12 : 0 }}>
+            <div style={{ gridColumn: "1 / -1" }}>
+              <label style={labelStyle}>NYSC STATUS</label>
+              <select
+                value={profile.nationalService?.status || ""}
+                onChange={e => setProfile(p => ({ ...p, nationalService: { ...(p.nationalService || { stateOfDeployment: "", year: "", ppa: "" }), status: e.target.value } }))}
+                style={{ ...inputStyle, cursor: "pointer" }}
+              >
+                <option value="">Select status...</option>
+                <option value="Completed">Completed</option>
+                <option value="Exempted">Exempted</option>
+                <option value="In Progress">In Progress</option>
+              </select>
+            </div>
+          </div>
+          {profile.nationalService?.status && (
+            <div className="grid-2col-sm">
+              {profile.nationalService.status !== "Exempted" && (
+                <div>
+                  <label style={labelStyle}>STATE OF DEPLOYMENT</label>
+                  <input
+                    value={profile.nationalService.stateOfDeployment}
+                    onChange={e => setProfile(p => ({ ...p, nationalService: { ...p.nationalService, stateOfDeployment: e.target.value } }))}
+                    placeholder="e.g. Lagos"
+                    style={inputStyle}
+                  />
+                </div>
+              )}
+              <div>
+                <label style={labelStyle}>YEAR OF COMPLETION</label>
+                <input
+                  value={profile.nationalService.year}
+                  onChange={e => setProfile(p => ({ ...p, nationalService: { ...p.nationalService, year: e.target.value } }))}
+                  placeholder="e.g. 2023"
+                  style={inputStyle}
+                />
+              </div>
+              {profile.nationalService.status !== "Exempted" && (
+                <div>
+                  <label style={labelStyle}>PRIMARY PLACE OF ASSIGNMENT (optional)</label>
+                  <input
+                    value={profile.nationalService.ppa}
+                    onChange={e => setProfile(p => ({ ...p, nationalService: { ...p.nationalService, ppa: e.target.value } }))}
+                    placeholder="e.g. Access Bank Plc"
+                    style={inputStyle}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Certifications */}
+        <div className="card profile-card">
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
+            <div className="tag">Certifications</div>
+            <button onClick={addCertification} className="btn-ghost" style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
+              + Add certification
+            </button>
+          </div>
+          {(profile.certifications || []).length === 0 ? (
+            <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>No certifications added yet.</p>
+          ) : profile.certifications.map((cert, i) => (
+            <div key={i} style={{ marginBottom: 24, paddingBottom: 24, borderBottom: i < profile.certifications.length - 1 ? `1px solid ${COLORS.border}` : "none" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 12 }}>
+                <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>CERTIFICATION {i + 1}</span>
+                <button onClick={() => removeCertification(i)} style={{ background: "transparent", border: "none", color: COLORS.textMuted, cursor: "pointer", fontSize: 16 }}>×</button>
+              </div>
+              <div className="grid-2col-sm">
+                <div>
+                  <label style={labelStyle}>CERTIFICATION NAME</label>
+                  <input value={cert.name} onChange={e => updateCertification(i, "name", e.target.value)} placeholder="AWS Certified Solutions Architect" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>ISSUING ORGANISATION</label>
+                  <input value={cert.issuingOrg} onChange={e => updateCertification(i, "issuingOrg", e.target.value)} placeholder="Amazon Web Services" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>YEAR OBTAINED</label>
+                  <input value={cert.year} onChange={e => updateCertification(i, "year", e.target.value)} placeholder="2024" style={inputStyle} />
+                </div>
+                <div>
+                  <label style={labelStyle}>CERTIFICATE ID (optional)</label>
+                  <input value={cert.certId} onChange={e => updateCertification(i, "certId", e.target.value)} placeholder="ABC-12345" style={inputStyle} />
+                </div>
               </div>
             </div>
           ))}
