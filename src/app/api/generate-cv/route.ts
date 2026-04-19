@@ -35,6 +35,7 @@ export async function POST(req: NextRequest) {
     }
 
     const profile = data.profile;
+    console.log("Profile data:", JSON.stringify(profile, null, 2));
 
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
@@ -148,13 +149,18 @@ DYNAMIC GENERATION RULES:
 10. Before generating, mentally ask: "If I only read the JD and then read this CV, would I immediately see this person as the perfect fit for THIS specific role at THIS specific company?" If not, rewrite until the answer is yes.
 
 NYSC AND CERTIFICATIONS RULES:
-1. If NYSC status is "Completed" or "In Progress", always include it in the Education section of the CV directly below the degree, formatted as: "National Youth Service Corps (NYSC) — [State], [Year]"
-2. If NYSC status is "Exempted", include it as: "NYSC Exemption Certificate — [Year]"
-3. Never omit NYSC if it is provided — it is mandatory for Nigerian job applications
-4. If certifications exist, add a "Certifications" section to the CV between Education and Skills
-5. Format each certification as: "Certification Name — Issuing Organisation (Year)"
-6. If a certificate ID is provided include it in brackets after the year, e.g. "(2024) [ABC-12345]"
-7. Only include certifications that are relevant to the job description — filter out irrelevant ones
+1. CRITICAL: If the candidate profile contains ANY NYSC information (even partial), you MUST include it in the Education section of the CV. This is non-negotiable for Nigerian job applications. Format it as a separate entry directly below the degree:
+
+   National Youth Service Corps (NYSC)
+   [State of Deployment] | [Year]
+   PPA: [Primary Place of Assignment]
+
+   Never skip this even if the rest of the education section is sparse.
+2. If NYSC status is "Exempted", include it as a separate education entry: "NYSC Exemption Certificate — [Year]"
+3. If certifications exist, add a "Certifications" section to the CV between Education and Skills
+4. Format each certification as: "Certification Name — Issuing Organisation (Year)"
+5. If a certificate ID is provided include it in brackets after the year, e.g. "(2024) [ABC-12345]"
+6. Only include certifications that are relevant to the job description — filter out irrelevant ones
 
 ATS FORMATTING RULES:
 - Use standard section headers: Professional Summary, Work Experience, Projects, Education, Skills
@@ -263,14 +269,20 @@ ${edu.degree} — ${edu.school}, ${edu.location} (${edu.period}) GPA: ${edu.gpa}
 SKILLS:
 ${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}
 
-NATIONAL SERVICE:
-${profile.nationalService?.status ? `NYSC Status: ${profile.nationalService.status}
-State of Deployment: ${profile.nationalService.stateOfDeployment}
-Year: ${profile.nationalService.year}
-PPA: ${profile.nationalService.ppa}` : "Not provided"}
+NATIONAL SERVICE (NYSC):
+${profile.nationalService?.status
+  ? `Status: ${profile.nationalService.status}
+State of Deployment: ${profile.nationalService.stateOfDeployment || "Not specified"}
+Year Completed: ${profile.nationalService.year || "Not specified"}
+PPA: ${profile.nationalService.ppa || "Not specified"}`
+  : "NYSC information not provided"}
 
 CERTIFICATIONS:
-${profile.certifications?.length > 0 ? profile.certifications.map((c: any) => `${c.name} — ${c.issuingOrg} (${c.year})${c.certId ? ` [${c.certId}]` : ""}`).join("\n") : "None listed"}`,
+${profile.certifications?.length > 0
+  ? profile.certifications.map((c: any) =>
+      `- ${c.name} issued by ${c.issuingOrg} in ${c.year}${c.certId ? ` (ID: ${c.certId})` : ""}`
+    ).join("\n")
+  : "No certifications listed"}`,
         },
       ],
       temperature: 0.7,
