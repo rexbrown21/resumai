@@ -15,7 +15,9 @@
     "@vercel/analytics": "^2.0.1",
     "groq-sdk": "^1.1.1",
     "jspdf": "^4.2.0",
+    "mammoth": "^1.12.0",
     "next": "^16.1.6",
+    "pdf-parse": "^2.4.5",
     "posthog-js": "^1.363.5",
     "react": "19.2.3",
     "react-dom": "19.2.3"
@@ -23,6 +25,7 @@
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "babel-plugin-react-compiler": "1.0.0",

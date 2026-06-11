@@ -30,10 +30,66 @@ export default function Tailor() {
   const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
   const [jobUrl, setJobUrl] = useState("");
   const [fetching, setFetching] = useState(false);
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+  const [resumeInputMode, setResumeInputMode] = useState<"upload" | "paste">("upload");
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    setUploadError("");
+    setResumeText("");
+    try {
+      const form = new FormData();
+      form.append("file", file);
+      const res = await fetch("/api/parse-resume", { method: "POST", body: form });
+      const data = await res.json();
+      if (!res.ok) { setUploadError(data.error || "Failed to read file"); return; }
+      setUploadedFile(file);
+      setResumeText(data.text);
+    } catch {
+      setUploadError("Failed to upload file. Please try again.");
+    } finally {
+      setUploading(false);
+      e.target.value = "";
+    }
+  };
+
+  const saveToVault = async (data: any) => {
+    if (!user?.id) return;
+    const date = new Date().toLocaleDateString();
+    const resumeName = (company && role) ? `${company} — ${role}` : `Generated CV — ${date}`;
+    const { data: saved } = await supabase
+      .from("resumes")
+      .insert({
+        user_id: user.id,
+        name: resumeName,
+        type: data.jobType || "General",
+        notes: `Auto-saved from ${mode === "generate" ? "CV generation" : "resume tailoring"} on ${date}`,
+        tailored_count: 1,
+        structured_data: data.structured || null,
+      })
+      .select()
+      .single();
+
+    if (saved) {
+      setSavedToVault(true);
+      setResumes(prev => [{
+        id: saved.id,
+        name: saved.name,
+        type: saved.type,
+        notes: saved.notes || "",
+        uploaded: new Date(saved.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
+        tailored: 1,
+      }, ...prev]);
+    }
+  };
 
   const analyze = async () => {
     if (!jobDesc) { setError("Please add a job description."); return; }
-    if (mode === "tailor" && !resumeText) { setError("Please paste your resume text below."); return; }
+    if (mode === "tailor" && !resumeText) { setError("Please upload or paste your resume."); return; }
     setError("");
     setStep("analyzing");
 
@@ -62,6 +118,7 @@ export default function Tailor() {
       const data = await res.json();
       setResult(data);
       setStep("result");
+      saveToVault(data);
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
       setStep("input");
@@ -279,42 +336,11 @@ export default function Tailor() {
     });
   };
 
-    const logApplication = async () => {
+    const logApplication = () => {
     if (!result) return;
     downloadResume();
 
     const date = new Date().toLocaleDateString();
-    const resumeName = (company && role)
-      ? `${company} — ${role}`
-      : `Generated CV — ${date}`;
-    const notes = `Auto-saved from ${mode === "generate" ? "CV generation" : "resume tailoring"} on ${date}`;
-
-    const { data } = await supabase
-      .from("resumes")
-      .insert({
-        user_id: user!.id,
-        name: resumeName,
-        type: result.jobType || "General",
-        notes,
-        tailored_count: 1,
-        structured_data: result.structured || null,
-      })
-      .select()
-      .single();
-
-    if (data) {
-      setResumes(prev => [{
-        id: data.id,
-        name: data.name,
-        type: data.type,
-        notes: data.notes || "",
-        uploaded: new Date(data.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        tailored: 1,
-      }, ...prev]);
-    }
-
-    setSavedToVault(true);
-
     addApplication({
       id: Date.now(),
       company: company || "Unnamed Company",
@@ -331,6 +357,7 @@ export default function Tailor() {
       setJobDesc(""); setCompany(""); setRole("");
       setResult(null); setSelectedResume(null); setResumeText("");
       setSavedToVault(false);
+      setUploadedFile(null); setUploadError("");
       setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError("");
     }, 1500);
   };
@@ -362,7 +389,9 @@ export default function Tailor() {
   };
 
   const copyToClipboard = () => {
-    navigator.clipboard.writeText(coverLetter);
+    const name = result?.structured?.name || user?.name || "";
+    const full = "Dear Hiring Manager,\n\n" + coverLetter + "\n\nSincerely,\n" + name;
+    navigator.clipboard.writeText(full);
   };
 
   const downloadCoverLetterPDF = () => {
@@ -396,19 +425,22 @@ export default function Tailor() {
       doc.setFontSize(10.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      doc.text("Hiring Manager,", margin, y);
+      doc.text("Dear Hiring Manager,", margin, y);
       y += 8;
-      const bodyLines = doc.splitTextToSize(coverLetter, maxWidth);
-      bodyLines.forEach((line: string) => {
-        doc.text(line, margin, y);
-        y += 5.5;
+      const paragraphs = coverLetter.split(/\n\n+/);
+      paragraphs.forEach((para: string) => {
+        const paraLines = doc.splitTextToSize(para.trim(), maxWidth);
+        paraLines.forEach((line: string) => {
+          doc.text(line, margin, y);
+          y += 5.5;
+        });
+        y += 3;
       });
-      y += 6;
+      y += 4;
       doc.text("Sincerely,", margin, y);
       y += 7;
-      const firstName = name.split(" ")[0];
       doc.setFont("helvetica", "bold");
-      doc.text(firstName, margin, y);
+      doc.text(name, margin, y);
       const fileName = ((company || "cover-letter") + "-" + (role || "application")).replace(/\s+/g, "-").toLowerCase();
       doc.save(fileName + "-cover-letter.pdf");
     });
@@ -602,18 +634,89 @@ export default function Tailor() {
                 </div>
 
                 <div className="card" style={{ padding: "32px" }}>
-                  <div className="tag" style={{ marginBottom: 16 }}>Your resume text</div>
-                  <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, marginBottom: 12 }}>
-                    Paste the full text of your resume here — the AI will read and rewrite it.
-                  </p>
-                  <textarea
-                    placeholder="Paste your full resume text here..."
-                    value={resumeText} onChange={e => setResumeText(e.target.value)}
-                    style={{
-                      width: "100%", height: 200, padding: "14px 16px", borderRadius: 2,
-                      fontSize: 13, lineHeight: 1.7, resize: "none",
-                      fontFamily: "'DM Mono', monospace",
-                    }} />
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
+                    <div className="tag">Your resume</div>
+                    <div style={{ display: "flex", gap: 2 }}>
+                      {(["upload", "paste"] as const).map(m => (
+                        <button key={m} onClick={() => setResumeInputMode(m)} style={{
+                          padding: "6px 14px", fontSize: 12, cursor: "pointer", borderRadius: 2,
+                          fontFamily: "'Syne', sans-serif", fontWeight: 600,
+                          background: resumeInputMode === m ? COLORS.accent : "transparent",
+                          color: resumeInputMode === m ? "#080808" : COLORS.textDim,
+                          border: `1px solid ${resumeInputMode === m ? COLORS.accent : COLORS.border}`,
+                        }}>
+                          {m === "upload" ? "Upload file" : "Paste text"}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {resumeInputMode === "upload" ? (
+                    uploadedFile ? (
+                      <>
+                        <div style={{
+                          display: "flex", justifyContent: "space-between", alignItems: "center",
+                          padding: "10px 14px", background: `${COLORS.success}10`,
+                          border: `1px solid ${COLORS.success}30`, marginBottom: 12,
+                        }}>
+                          <span className="mono" style={{ fontSize: 12, color: COLORS.success }}>
+                            ✓ {uploadedFile.name}
+                          </span>
+                          <button onClick={() => { setUploadedFile(null); setResumeText(""); }} style={{
+                            background: "transparent", border: "none", color: COLORS.textDim,
+                            fontSize: 12, cursor: "pointer", fontFamily: "'DM Mono', monospace",
+                          }}>
+                            Change file
+                          </button>
+                        </div>
+                        <textarea
+                          value={resumeText} onChange={e => setResumeText(e.target.value)}
+                          style={{
+                            width: "100%", height: 200, padding: "14px 16px", borderRadius: 2,
+                            fontSize: 12, lineHeight: 1.7, resize: "none",
+                            fontFamily: "'DM Mono', monospace",
+                          }} />
+                      </>
+                    ) : (
+                      <>
+                        <input
+                          type="file" id="resume-file-input"
+                          accept=".pdf,.docx,.doc,.txt"
+                          onChange={handleFileUpload}
+                          style={{ display: "none" }}
+                        />
+                        <label htmlFor="resume-file-input" style={{
+                          display: "flex", flexDirection: "column", alignItems: "center",
+                          justifyContent: "center", gap: 10,
+                          height: 160, border: `2px dashed ${COLORS.border}`,
+                          cursor: uploading ? "wait" : "pointer",
+                          transition: "border-color 0.2s",
+                        }}>
+                          <span style={{ fontSize: 28 }}>📄</span>
+                          <span className="mono" style={{ fontSize: 13, color: COLORS.textDim }}>
+                            {uploading ? "Extracting text..." : "Click to upload your resume"}
+                          </span>
+                          <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>
+                            PDF, DOCX, or TXT
+                          </span>
+                        </label>
+                        {uploadError && (
+                          <p className="mono" style={{ color: COLORS.danger, fontSize: 12, marginTop: 10 }}>
+                            {uploadError}
+                          </p>
+                        )}
+                      </>
+                    )
+                  ) : (
+                    <textarea
+                      placeholder="Paste your full resume text here..."
+                      value={resumeText} onChange={e => setResumeText(e.target.value)}
+                      style={{
+                        width: "100%", height: 200, padding: "14px 16px", borderRadius: 2,
+                        fontSize: 13, lineHeight: 1.7, resize: "none",
+                        fontFamily: "'DM Mono', monospace",
+                      }} />
+                  )}
                 </div>
               </>
             )}
@@ -724,13 +827,16 @@ export default function Tailor() {
                   </div>
                 </div>
                 <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 32 }}>
-                  <button className="btn-primary" onClick={logApplication} style={{ padding: "14px", borderRadius: 2 }}>
-                    {savedToVault ? "✓ Saved to vault & logged" : "Download & log application →"}
+                  <div className="mono" style={{ fontSize: 11, color: savedToVault ? COLORS.success : COLORS.textMuted, marginBottom: 4 }}>
+                    {savedToVault ? "✓ Saved to resume vault" : "Saving to vault..."}
+                  </div>
+                  <button className="btn-primary" onClick={logApplication} disabled={!savedToVault} style={{ padding: "14px", borderRadius: 2 }}>
+                    Download & log application →
                   </button>
                   <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                     Download PDF only
                   </button>
-                  <button className="btn-ghost" onClick={() => { setStep("input"); setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
+                  <button className="btn-ghost" onClick={() => { setStep("input"); setResumeText(""); setUploadedFile(null); setUploadError(""); setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
                     {mode === "generate" ? "Generate another" : "Tailor another"}
                   </button>
                 </div>
@@ -839,7 +945,7 @@ export default function Tailor() {
                     fontFamily: "'DM Mono', monospace", fontSize: 13,
                     color: COLORS.textDim, lineHeight: 1.8, whiteSpace: "pre-wrap",
                   }}>
-                    {coverLetter}
+                    {"Dear Hiring Manager,\n\n" + coverLetter + "\n\nSincerely,\n" + (result?.structured?.name || user?.name || "")}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button onClick={copyToClipboard} className="btn-ghost" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
