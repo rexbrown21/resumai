@@ -42,16 +42,47 @@ export default function Tailor() {
     setUploadError("");
     setResumeText("");
     try {
-      const form = new FormData();
-      form.append("file", file);
-      const res = await fetch("/api/parse-resume", { method: "POST", body: form });
-      let data: { text?: string; error?: string } = {};
-      try { data = await res.json(); } catch { /* non-JSON response */ }
-      if (!res.ok) { setUploadError(data.error ?? `Upload failed (${res.status}). Please try again.`); return; }
+      const name = file.name.toLowerCase();
+      let text = "";
+
+      if (name.endsWith(".txt") || name.endsWith(".rtf")) {
+        text = await file.text();
+      } else if (name.endsWith(".pdf")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const pdfjsLib = await import("pdfjs-dist");
+        pdfjsLib.GlobalWorkerOptions.workerSrc =
+          `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
+        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+        const pages: string[] = [];
+        for (let i = 1; i <= pdf.numPages; i++) {
+          const page = await pdf.getPage(i);
+          const content = await page.getTextContent();
+          const pageText = content.items
+            .map((item) => ("str" in item ? (item as { str: string }).str : ""))
+            .join(" ");
+          pages.push(pageText);
+        }
+        text = pages.join("\n");
+      } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
+        const arrayBuffer = await file.arrayBuffer();
+        const mammoth = await import("mammoth");
+        const result = await mammoth.extractRawText({ arrayBuffer });
+        text = result.value;
+      } else {
+        setUploadError("Unsupported file type. Please upload a PDF, DOCX, or TXT file.");
+        return;
+      }
+
+      if (!text.trim()) {
+        setUploadError("Could not extract text from this file. Try the 'Paste text' option instead.");
+        return;
+      }
+
       setUploadedFile(file);
-      setResumeText(data.text ?? "");
-    } catch {
-      setUploadError("Failed to upload file. Please try again.");
+      setResumeText(text.trim());
+    } catch (err) {
+      console.error("File parse error:", err);
+      setUploadError("Failed to read this file. Try a different format or paste the text instead.");
     } finally {
       setUploading(false);
       e.target.value = "";
