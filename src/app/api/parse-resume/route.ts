@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import mammoth from "mammoth";
+import * as pdfjsLib from "pdfjs-dist";
 
-// pdf-parse is CJS-only; require() avoids the ESM default-export issue
-// eslint-disable-next-line @typescript-eslint/no-require-imports
-const pdfParse: (buf: Buffer) => Promise<{ text: string }> = require("pdf-parse");
+// Disable worker for Node.js serverless environment
+pdfjsLib.GlobalWorkerOptions.workerSrc = "";
+
+async function extractPdfText(buffer: Buffer): Promise<string> {
+  const uint8Array = new Uint8Array(buffer);
+  const pdf = await pdfjsLib.getDocument({
+    data: uint8Array,
+    useWorkerFetch: false,
+    useSystemFonts: true,
+  }).promise;
+
+  const pages: string[] = [];
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const pageText = content.items
+      .map((item) => ("str" in item ? item.str : ""))
+      .join(" ");
+    pages.push(pageText);
+  }
+  return pages.join("\n");
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -21,8 +41,7 @@ export async function POST(req: NextRequest) {
     let text = "";
 
     if (name.endsWith(".pdf")) {
-      const result = await pdfParse(buffer);
-      text = result.text;
+      text = await extractPdfText(buffer);
     } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
       const result = await mammoth.extractRawText({ buffer });
       text = result.value;

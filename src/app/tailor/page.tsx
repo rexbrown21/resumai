@@ -45,10 +45,11 @@ export default function Tailor() {
       const form = new FormData();
       form.append("file", file);
       const res = await fetch("/api/parse-resume", { method: "POST", body: form });
-      const data = await res.json();
-      if (!res.ok) { setUploadError(data.error || "Failed to read file"); return; }
+      let data: { text?: string; error?: string } = {};
+      try { data = await res.json(); } catch { /* non-JSON response */ }
+      if (!res.ok) { setUploadError(data.error ?? `Upload failed (${res.status}). Please try again.`); return; }
       setUploadedFile(file);
-      setResumeText(data.text);
+      setResumeText(data.text ?? "");
     } catch {
       setUploadError("Failed to upload file. Please try again.");
     } finally {
