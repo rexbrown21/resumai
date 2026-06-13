@@ -35,6 +35,33 @@ export default function Tailor() {
   const [uploadError, setUploadError] = useState("");
   const [resumeInputMode, setResumeInputMode] = useState<"upload" | "paste">("upload");
 
+  const loadCdnScript = (src: string): Promise<void> =>
+    new Promise((resolve, reject) => {
+      if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
+      const s = document.createElement("script");
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = () => reject(new Error(`Failed to load ${src}`));
+      document.head.appendChild(s);
+    });
+
+  const extractPdfText = async (file: File): Promise<string> => {
+    const PDFJS_VERSION = "3.11.174";
+    const BASE = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build`;
+    await loadCdnScript(`${BASE}/pdf.min.js`);
+    const pdfjs = (window as any).pdfjsLib;
+    pdfjs.GlobalWorkerOptions.workerSrc = `${BASE}/pdf.worker.min.js`;
+    const arrayBuffer = await file.arrayBuffer();
+    const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+    const pages: string[] = [];
+    for (let i = 1; i <= pdf.numPages; i++) {
+      const page = await pdf.getPage(i);
+      const content = await page.getTextContent();
+      pages.push(content.items.map((item: any) => item.str ?? "").join(" "));
+    }
+    return pages.join("\n");
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -48,41 +75,27 @@ export default function Tailor() {
       if (name.endsWith(".txt") || name.endsWith(".rtf")) {
         text = await file.text();
       } else if (name.endsWith(".pdf")) {
-        const arrayBuffer = await file.arrayBuffer();
-        const pdfjsLib = await import("pdfjs-dist");
-        pdfjsLib.GlobalWorkerOptions.workerSrc =
-          `https://unpkg.com/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`;
-        const pdf = await pdfjsLib.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-        const pages: string[] = [];
-        for (let i = 1; i <= pdf.numPages; i++) {
-          const page = await pdf.getPage(i);
-          const content = await page.getTextContent();
-          const pageText = content.items
-            .map((item) => ("str" in item ? (item as { str: string }).str : ""))
-            .join(" ");
-          pages.push(pageText);
-        }
-        text = pages.join("\n");
+        text = await extractPdfText(file);
       } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
+        await loadCdnScript("https://cdn.jsdelivr.net/npm/mammoth@1/mammoth.browser.min.js");
         const arrayBuffer = await file.arrayBuffer();
-        const mammoth = await import("mammoth");
-        const result = await mammoth.extractRawText({ arrayBuffer });
+        const result = await (window as any).mammoth.extractRawText({ arrayBuffer });
         text = result.value;
       } else {
-        setUploadError("Unsupported file type. Please upload a PDF, DOCX, or TXT file.");
+        setUploadError("Please upload a PDF, DOCX, or TXT file.");
         return;
       }
 
       if (!text.trim()) {
-        setUploadError("Could not extract text from this file. Try the 'Paste text' option instead.");
+        setUploadError("Could not extract text. Try the 'Paste text' option instead.");
         return;
       }
 
       setUploadedFile(file);
       setResumeText(text.trim());
-    } catch (err) {
+    } catch (err: any) {
       console.error("File parse error:", err);
-      setUploadError("Failed to read this file. Try a different format or paste the text instead.");
+      setUploadError(err.message || "Failed to read file. Try pasting the text instead.");
     } finally {
       setUploading(false);
       e.target.value = "";
