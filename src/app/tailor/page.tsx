@@ -46,20 +46,31 @@ export default function Tailor() {
     });
 
   const extractPdfText = async (file: File): Promise<string> => {
-    const PDFJS_VERSION = "3.11.174";
-    const BASE = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${PDFJS_VERSION}/build`;
+    const BASE = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build";
+
     await loadCdnScript(`${BASE}/pdf.min.js`);
+
     const pdfjs = (window as any).pdfjsLib;
-    pdfjs.GlobalWorkerOptions.workerSrc = `${BASE}/pdf.worker.min.js`;
-    const arrayBuffer = await file.arrayBuffer();
-    const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-    const pages: string[] = [];
-    for (let i = 1; i <= pdf.numPages; i++) {
-      const page = await pdf.getPage(i);
-      const content = await page.getTextContent();
-      pages.push(content.items.map((item: any) => item.str ?? "").join(" "));
+    if (!pdfjs) throw new Error("PDF library failed to load. Please try again.");
+
+    // Fetch worker as a blob so it runs same-origin — avoids cross-origin worker blocks
+    const workerBlob = await fetch(`${BASE}/pdf.worker.min.js`).then(r => r.blob());
+    const workerUrl = URL.createObjectURL(workerBlob);
+    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+
+    try {
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
+      const pages: string[] = [];
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        pages.push(content.items.map((item: any) => item.str || "").join(" "));
+      }
+      return pages.join("\n");
+    } finally {
+      URL.revokeObjectURL(workerUrl);
     }
-    return pages.join("\n");
   };
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
