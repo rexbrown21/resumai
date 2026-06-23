@@ -9,6 +9,38 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+async function createCompletionWithRetry(
+  params: Parameters<typeof groq.chat.completions.create>[0]
+): Promise<Groq.Chat.ChatCompletion> {
+  const maxAttempts = 3;
+  const backoffMs = [2000, 4000, 8000];
+
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    try {
+      return (await groq.chat.completions.create(
+        params
+      )) as Groq.Chat.ChatCompletion;
+    } catch (error: any) {
+      const isRateLimit =
+        error.status === 429 ||
+        error.message?.includes("rate_limit_exceeded") ||
+        error.error?.type === "rate_limit_error";
+
+      if (!isRateLimit || attempt === maxAttempts - 1) {
+        throw error;
+      }
+
+      const waitMs = backoffMs[attempt];
+      console.log(
+        `Rate limited on attempt ${attempt + 1}. Waiting ${waitMs}ms before retry...`
+      );
+      await new Promise((resolve) => setTimeout(resolve, waitMs));
+    }
+  }
+
+  throw new Error("rate_limit_exceeded");
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { jobDescription, userId } = await req.json();
@@ -37,7 +69,7 @@ export async function POST(req: NextRequest) {
     const profile = data.profile;
     console.log("Profile data:", JSON.stringify(profile, null, 2));
 
-    const completion = await groq.chat.completions.create({
+    const completion = await createCompletionWithRetry({
       model: "llama-3.3-70b-versatile",
       messages: [
         {
@@ -295,10 +327,19 @@ ${profile.certifications?.length > 0
 
     return NextResponse.json(parsed);
   } catch (error) {
+    const isRateLimit =
+      error instanceof Error &&
+      (error.message.includes("rate_limit_exceeded") ||
+        (error as any).status === 429);
+
     console.error("Generate CV error:", error);
     return NextResponse.json(
-      { error: "Failed to generate CV" },
-      { status: 500 }
+      {
+        error: isRateLimit
+          ? "We're experiencing high demand right now. Please try again in a moment."
+          : "Failed to generate CV",
+      },
+      { status: isRateLimit ? 429 : 500 }
     );
   }
 }

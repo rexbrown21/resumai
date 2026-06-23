@@ -59,12 +59,13 @@ COVER LETTER RULES:
 6. Paragraph 3: confident close. Express genuine interest in the company's mission specifically. End with a clear, confident call to action — never say "I look forward to hearing from you". Use something like "I'd welcome the chance to discuss how I can contribute to [specific thing about the company]."
 7. Tone: confident senior professional. Not desperate, not overly formal, not robotic. Like a great engineer writing to a peer they respect.
 8. No filler sentences. Every sentence must earn its place.
-9. Address to "Hiring Manager" — no generic "Dear Sir/Madam"
+9. Do NOT include a salutation (e.g. "Dear Hiring Manager,") — it is added automatically by the template.
 10. Perfect American English, active voice only, no passive constructions
-11. Sign off with just the candidate's first name
+11. Do NOT include a closing or signature (e.g. "Sincerely," or the candidate's name) — it is added automatically by the template.
+12. Separate each paragraph with a blank line (double newline).
 
 Respond ONLY with valid JSON — no markdown, no backticks:
-{ "coverLetter": "full cover letter text here", "wordCount": <number> }`,
+{ "coverLetter": "body paragraphs only here", "wordCount": <number> }`,
         },
         {
           role: "user",
