@@ -143,9 +143,33 @@ export default function Tailor() {
     }
   };
 
+  const validateInput = (): string | null => {
+    const jd = jobDesc.trim();
+
+    if (jd.length < 100) {
+      return "Please paste the full job description — it looks too short to analyze properly.";
+    }
+
+    const signalWords = [
+      "experience", "responsibilities", "requirements", "skills", "role",
+      "qualifications", "degree", "years", "team", "company",
+    ];
+    const lowerJd = jd.toLowerCase();
+    const matches = signalWords.filter(word => lowerJd.includes(word)).length;
+    if (matches < 3) {
+      return "This doesn't look like a complete job description. Please paste the full posting including responsibilities and requirements.";
+    }
+
+    if (mode === "tailor" && resumeText.trim().length < 200) {
+      return "Please paste your complete resume text — it looks incomplete.";
+    }
+
+    return null;
+  };
+
   const analyze = async () => {
-    if (!jobDesc) { setError("Please add a job description."); return; }
-    if (mode === "tailor" && !resumeText) { setError("Please upload or paste your resume."); return; }
+    const validationError = validateInput();
+    if (validationError) { setError(validationError); return; }
     setError("");
     setStep("analyzing");
 

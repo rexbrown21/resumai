@@ -11,6 +11,24 @@ const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
 
+const JD_SIGNAL_WORDS = [
+  "experience", "responsibilities", "requirements", "skills", "role",
+  "qualifications", "degree", "years", "team", "company",
+];
+
+function validateJobDescription(jobDescription: string): string | null {
+  const jd = jobDescription.trim();
+  if (jd.length < 100) {
+    return "Please paste the full job description — it looks too short to analyze properly.";
+  }
+  const lowerJd = jd.toLowerCase();
+  const matches = JD_SIGNAL_WORDS.filter((word) => lowerJd.includes(word)).length;
+  if (matches < 3) {
+    return "This doesn't look like a complete job description. Please paste the full posting including responsibilities and requirements.";
+  }
+  return null;
+}
+
 async function createCompletionWithRetry(
   params: Parameters<typeof groq.chat.completions.create>[0]
 ): Promise<Groq.Chat.ChatCompletion> {
@@ -50,6 +68,18 @@ export async function POST(req: NextRequest) {
     if (!jobDescription || !resumeText) {
       return NextResponse.json(
         { error: "Job description and resume are required" },
+        { status: 400 }
+      );
+    }
+
+    const jdError = validateJobDescription(jobDescription);
+    if (jdError) {
+      return NextResponse.json({ error: jdError }, { status: 400 });
+    }
+
+    if (resumeText.trim().length < 200) {
+      return NextResponse.json(
+        { error: "Please paste your complete resume text — it looks incomplete." },
         { status: 400 }
       );
     }
