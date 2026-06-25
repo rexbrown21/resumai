@@ -26,9 +26,9 @@ export default function Dashboard() {
     (async () => {
       try {
         const { data, error } = await supabase
-          .from("profiles")
+          .from("profiles_data")
           .select("has_seen_onboarding")
-          .eq("id", user.id)
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (error) {
@@ -41,9 +41,9 @@ export default function Dashboard() {
           timer = setTimeout(() => startOnboardingTour(), 500);
 
           const { error: updateError } = await supabase
-            .from("profiles")
+            .from("profiles_data")
             .update({ has_seen_onboarding: true })
-            .eq("id", user.id);
+            .eq("user_id", user.id);
           if (updateError) {
             console.error("Failed to mark onboarding as seen:", updateError.message);
           }
