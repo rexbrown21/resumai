@@ -40,12 +40,14 @@ export default function Dashboard() {
           // Let the page render before spotlighting elements.
           timer = setTimeout(() => startOnboardingTour(), 500);
 
-          const { error: updateError } = await supabase
+          const { error: upsertError } = await supabase
             .from("profiles_data")
-            .update({ has_seen_onboarding: true })
-            .eq("user_id", user.id);
-          if (updateError) {
-            console.error("Failed to mark onboarding as seen:", updateError.message);
+            .upsert(
+              { user_id: user.id, has_seen_onboarding: true },
+              { onConflict: "user_id" }
+            );
+          if (upsertError) {
+            console.error("Failed to mark onboarding as seen:", upsertError.message);
           }
         }
       } catch (err) {
