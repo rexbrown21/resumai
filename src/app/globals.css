@@ -202,3 +202,85 @@ input::placeholder, textarea::placeholder { color: var(--text-muted); }
 [data-theme="light"] nav {
   background: var(--bg) !important;
 }
+
+/* ─── DRIVER.JS ONBOARDING TOUR (dark-theme overrides) ───── */
+
+.driver-popover {
+  background-color: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-light);
+  border-radius: 2px;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.55);
+  font-family: 'Syne', sans-serif;
+}
+
+.driver-popover-title {
+  color: var(--text);
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+}
+
+.driver-popover-description {
+  color: var(--text-dim);
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.driver-popover-progress-text {
+  color: var(--text-muted);
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+}
+
+.driver-popover-close-btn {
+  color: var(--text-muted);
+}
+.driver-popover-close-btn:hover {
+  color: var(--text);
+}
+
+.driver-popover-navigation-btns button.driver-popover-prev-btn,
+.driver-popover-navigation-btns button.driver-popover-next-btn {
+  background: var(--surface-2);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  text-shadow: none;
+  font-family: 'Syne', sans-serif;
+  font-weight: 600;
+  font-size: 12px;
+  text-transform: none;
+}
+.driver-popover-navigation-btns button.driver-popover-prev-btn:hover,
+.driver-popover-navigation-btns button.driver-popover-next-btn:hover {
+  border-color: var(--border-light);
+  background: var(--border);
+}
+
+/* Primary action ("Next" / "Done") uses the brand accent */
+.driver-popover-navigation-btns button.driver-popover-next-btn {
+  background: var(--accent);
+  color: #080808;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.driver-popover-navigation-btns button.driver-popover-next-btn:hover {
+  background: var(--accent-dim);
+  border-color: var(--accent-dim);
+}
+
+/* Popover arrow — match the dark surface on every side */
+.driver-popover-arrow-side-left.driver-popover-arrow {
+  border-left-color: var(--surface);
+}
+.driver-popover-arrow-side-right.driver-popover-arrow {
+  border-right-color: var(--surface);
+}
+.driver-popover-arrow-side-top.driver-popover-arrow {
+  border-top-color: var(--surface);
+}
+.driver-popover-arrow-side-bottom.driver-popover-arrow {
+  border-bottom-color: var(--surface);
+}

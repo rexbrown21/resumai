@@ -1,9 +1,11 @@
 "use client";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
+import { startOnboardingTour } from "@/lib/onboarding";
 
 function getGreeting() {
   const hour = new Date().getHours();
@@ -15,6 +17,46 @@ function getGreeting() {
 export default function Dashboard() {
   const router = useRouter();
   const { user, setUser, resumes, applications } = useApp();
+
+  // First-time onboarding: auto-launch the tour once per user.
+  useEffect(() => {
+    if (!user?.id) return;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+
+    (async () => {
+      try {
+        const { data, error } = await supabase
+          .from("profiles")
+          .select("has_seen_onboarding")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (error) {
+          console.error("Onboarding check failed:", error.message);
+          return;
+        }
+
+        if (!data?.has_seen_onboarding) {
+          // Let the page render before spotlighting elements.
+          timer = setTimeout(() => startOnboardingTour(), 500);
+
+          const { error: updateError } = await supabase
+            .from("profiles")
+            .update({ has_seen_onboarding: true })
+            .eq("id", user.id);
+          if (updateError) {
+            console.error("Failed to mark onboarding as seen:", updateError.message);
+          }
+        }
+      } catch (err) {
+        console.error("Onboarding error:", err);
+      }
+    })();
+
+    return () => {
+      if (timer) clearTimeout(timer);
+    };
+  }, [user?.id]);
 
   const handleLogout = async () => {
     await supabase.auth.signOut();
@@ -41,7 +83,7 @@ export default function Dashboard() {
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
           <div>
             <div className="tag" style={{ marginBottom: 16 }}>Dashboard</div>
-            <h1 style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
+            <h1 data-tour="welcome" style={{ fontSize: 48, fontWeight: 800, letterSpacing: "-0.03em", color: COLORS.text }}>
               {getGreeting()},{" "}
               <span style={{ color: COLORS.accent }}>{user?.name || "there"}</span>
             </h1>
@@ -49,10 +91,16 @@ export default function Dashboard() {
               {new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
             </p>
           </div>
-          <button onClick={handleLogout} className="btn-ghost"
-            style={{ padding: "8px 20px", borderRadius: 2, fontSize: 12, color: "var(--danger)", borderColor: "var(--danger)", marginTop: 8 }}>
-            Logout
-          </button>
+          <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+            <button onClick={startOnboardingTour} className="btn-ghost"
+              style={{ padding: "8px 16px", borderRadius: 2, fontSize: 12 }}>
+              ? Help
+            </button>
+            <button onClick={handleLogout} className="btn-ghost"
+              style={{ padding: "8px 20px", borderRadius: 2, fontSize: 12, color: "var(--danger)", borderColor: "var(--danger)" }}>
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -76,7 +124,7 @@ export default function Dashboard() {
           <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, marginBottom: 28, lineHeight: 1.7 }}>
             Paste a job description and let AI match and optimize your best-fit resume in seconds.
           </p>
-          <button className="btn-primary" onClick={() => router.push("/tailor")}
+          <button className="btn-primary" data-tour="generate-link" onClick={() => router.push("/tailor")}
             style={{ padding: "12px 28px", borderRadius: 2 }}>
             Start tailoring →
           </button>

@@ -25,10 +25,10 @@ export default function Nav() {
   }, []);
 
   const navLinks = [
-    { href: "/dashboard", label: "Dashboard" },
-    { href: "/resumes", label: "Resumes" },
-    { href: "/tailor", label: "Tailor" },
-    { href: "/tracker", label: "Tracker" },
+    { href: "/dashboard", label: "Dashboard", tour: undefined as string | undefined },
+    { href: "/resumes", label: "Resumes", tour: "resumes-link" },
+    { href: "/tailor", label: "Tailor", tour: "tailor-link" },
+    { href: "/tracker", label: "Tracker", tour: "tracker-link" },
   ];
 
   return (
@@ -59,8 +59,9 @@ export default function Nav() {
             <div style={{ width: 120 }} />
           ) : user ? (
             <div className="nav-mobile-hidden" style={{ display: "flex", alignItems: "center", gap: 6 }}>
-              {navLinks.map(({ href, label }) => (
+              {navLinks.map(({ href, label, tour }) => (
                 <Link key={href} href={href}
+                  data-tour={tour}
                   className="btn-ghost"
                   style={{
                     padding: "6px 16px", borderRadius: 2, fontSize: 12,
@@ -90,6 +91,7 @@ export default function Nav() {
           {sessionLoaded && user && (
             <div ref={dropdownRef} style={{ position: "relative" }}>
               <div
+                data-tour="profile-link"
                 onClick={() => setDropdownOpen(!dropdownOpen)}
                 style={{
                   width: 32, height: 32, borderRadius: "50%",
