@@ -30,11 +30,11 @@ export default function Terms() {
         <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
 
           <Section title="1. Acceptance of Terms">
-            By accessing or using ResumAI (&ldquo;the Service&rdquo;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service. We reserve the right to update these terms at any time, and continued use of the Service constitutes acceptance of any changes.
+            By accessing or using RezumeAI (&ldquo;the Service&rdquo;), you agree to be bound by these Terms of Service. If you do not agree to these terms, please do not use the Service. We reserve the right to update these terms at any time, and continued use of the Service constitutes acceptance of any changes.
           </Section>
 
           <Section title="2. Description of Service">
-            ResumAI is an AI-powered resume tailoring platform that uses large language models to help users adapt their resumes to specific job descriptions. The Service includes resume storage, AI analysis, CV generation, and application tracking features. The Service is intended for personal, non-commercial use unless otherwise agreed in writing.
+            RezumeAI is an AI-powered resume tailoring platform that uses large language models to help users adapt their resumes to specific job descriptions. The Service includes resume storage, AI analysis, CV generation, and application tracking features. The Service is intended for personal, non-commercial use unless otherwise agreed in writing.
           </Section>
 
           <Section title="3. Account Registration">
@@ -42,11 +42,11 @@ export default function Terms() {
           </Section>
 
           <Section title="4. User Content">
-            You retain ownership of all content you upload to ResumAI, including resume text and personal information (&ldquo;User Content&rdquo;). By uploading User Content, you grant ResumAI a limited, non-exclusive license to process and store that content solely for the purpose of providing the Service to you. We do not sell, share, or use your resume data to train AI models without your explicit consent.
+            You retain ownership of all content you upload to RezumeAI, including resume text and personal information (&ldquo;User Content&rdquo;). By uploading User Content, you grant RezumeAI a limited, non-exclusive license to process and store that content solely for the purpose of providing the Service to you. We do not sell, share, or use your resume data to train AI models without your explicit consent.
           </Section>
 
           <Section title="5. AI-Generated Output">
-            ResumAI uses third-party AI models (including Groq and Llama 3.3) to generate tailored resume content. AI-generated output is provided &ldquo;as is&rdquo; and may contain inaccuracies. You are solely responsible for reviewing, verifying, and approving any content before using it in job applications. ResumAI does not guarantee employment outcomes or the accuracy of match scores.
+            RezumeAI uses third-party AI models (including Groq and Llama 3.3) to generate tailored resume content. AI-generated output is provided &ldquo;as is&rdquo; and may contain inaccuracies. You are solely responsible for reviewing, verifying, and approving any content before using it in job applications. RezumeAI does not guarantee employment outcomes or the accuracy of match scores.
           </Section>
 
           <Section title="6. Prohibited Use">
@@ -54,11 +54,11 @@ export default function Terms() {
           </Section>
 
           <Section title="7. Intellectual Property">
-            The ResumAI platform, branding, design, and underlying technology are owned by ResumAI and protected by applicable intellectual property laws. You may not copy, reproduce, or distribute any part of the Service without prior written permission.
+            The RezumeAI platform, branding, design, and underlying technology are owned by RezumeAI and protected by applicable intellectual property laws. You may not copy, reproduce, or distribute any part of the Service without prior written permission.
           </Section>
 
           <Section title="8. Limitation of Liability">
-            To the maximum extent permitted by law, ResumAI shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service, including but not limited to loss of employment opportunity, data loss, or reliance on AI-generated content.
+            To the maximum extent permitted by law, RezumeAI shall not be liable for any indirect, incidental, special, or consequential damages arising from your use of the Service, including but not limited to loss of employment opportunity, data loss, or reliance on AI-generated content.
           </Section>
 
           <Section title="9. Termination">

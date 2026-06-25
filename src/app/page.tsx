@@ -306,7 +306,7 @@ export default function LandingPage() {
               width: 20, height: 20, background: "var(--accent)",
               clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
             }} />
-            <span style={{ fontWeight: 800, fontSize: 14 }}>RESUMAI</span>
+            <span style={{ fontWeight: 800, fontSize: 14 }}>REZUMEAI</span>
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             <span className="mono" style={{ color: "var(--text-muted)", fontSize: 11 }}>

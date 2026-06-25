@@ -48,7 +48,7 @@ export default function LoginPage() {
         <div style={{ width: "100%", maxWidth: 420, animation: "fadeUp 0.5s ease" }}>
           <div className="tag" style={{ marginBottom: 32 }}>Welcome back</div>
           <h1 style={{ fontSize: 40, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 40, lineHeight: 1.1 }}>
-            Sign in to<br />ResumAI
+            Sign in to<br />RezumeAI
           </h1>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>

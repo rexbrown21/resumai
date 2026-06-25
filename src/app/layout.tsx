@@ -6,7 +6,7 @@ import { Analytics } from "@vercel/analytics/react";
 import PostHogProvider from "@/components/PostHogProvider";
 
 export const metadata: Metadata = {
-  title: "ResumAI – Built to fit. Born to land.",
+  title: "RezumeAI – Built to fit. Born to land.",
   description: "AI-powered resume tailoring for every job application.",
 };
 

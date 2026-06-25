@@ -42,7 +42,7 @@ export default function Nav() {
             clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
           }} />
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: COLORS.text }}>
-            RESUMAI
+            REZUMEAI
           </span>
         </div>
 

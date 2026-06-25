@@ -30,7 +30,7 @@ export default function Privacy() {
         <div style={{ display: "flex", flexDirection: "column", gap: 40 }}>
 
           <Section title="1. Overview">
-            ResumAI (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use the ResumAI platform. By using the Service, you consent to the practices described in this policy.
+            RezumeAI (&ldquo;we&rdquo;, &ldquo;us&rdquo;, or &ldquo;our&rdquo;) is committed to protecting your privacy. This Privacy Policy explains how we collect, use, store, and protect your personal information when you use the RezumeAI platform. By using the Service, you consent to the practices described in this policy.
           </Section>
 
           <Section title="2. Information We Collect">
@@ -50,7 +50,7 @@ export default function Privacy() {
           </Section>
 
           <Section title="4. AI Processing">
-            Resume content you submit for tailoring is sent to Groq&apos;s API, which powers the Llama 3.3 70B model used by ResumAI. This data is subject to{" "}
+            Resume content you submit for tailoring is sent to Groq&apos;s API, which powers the Llama 3.3 70B model used by RezumeAI. This data is subject to{" "}
             <a href="https://groq.com/privacy-policy/" target="_blank" rel="noopener noreferrer" style={{ color: COLORS.accent, textDecoration: "none" }}>
               Groq&apos;s Privacy Policy
             </a>. We do not use your resume content to train AI models, and we do not share identifiable resume data with any other third parties.
@@ -65,7 +65,7 @@ export default function Privacy() {
           </Section>
 
           <Section title="7. Data Sharing">
-            We do not sell, rent, or share your personal data with third parties except: (a) service providers necessary to operate the platform (Supabase, Groq, Vercel); (b) when required by law or valid legal process; (c) to protect the rights, safety, or property of ResumAI or its users.
+            We do not sell, rent, or share your personal data with third parties except: (a) service providers necessary to operate the platform (Supabase, Groq, Vercel); (b) when required by law or valid legal process; (c) to protect the rights, safety, or property of RezumeAI or its users.
           </Section>
 
           <Section title="8. Your Rights">
