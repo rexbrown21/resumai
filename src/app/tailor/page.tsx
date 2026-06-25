@@ -25,6 +25,7 @@ export default function Tailor() {
   const [profileMissing, setProfileMissing] = useState(false);
   const [savedToVault, setSavedToVault] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
+  const [coverLetterData, setCoverLetterData] = useState<any>(null);
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterError, setCoverLetterError] = useState("");
   const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
@@ -438,7 +439,7 @@ export default function Tailor() {
       setResult(null); setSelectedResume(null); setResumeText("");
       setSavedToVault(false);
       setUploadedFile(null); setUploadError("");
-      setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError("");
+      setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
     }, 1500);
   };
 
@@ -460,6 +461,7 @@ export default function Tailor() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || "Failed to generate");
       setCoverLetter(data.coverLetter);
+      setCoverLetterData(data);
       setCoverLetterGenerated(true);
     } catch (err: any) {
       setCoverLetterError(err.message);
@@ -469,59 +471,108 @@ export default function Tailor() {
   };
 
   const copyToClipboard = () => {
-    const name = result?.structured?.name || user?.name || "";
-    const full = "Dear Hiring Manager,\n\n" + coverLetter + "\n\nSincerely,\n" + name;
-    navigator.clipboard.writeText(full);
+    navigator.clipboard.writeText(coverLetter);
   };
 
   const downloadCoverLetterPDF = () => {
+    if (!coverLetterData) return;
+
     import("jspdf").then(({ jsPDF }) => {
       const doc = new jsPDF({ format: "a4", unit: "mm" });
       const pageWidth = doc.internal.pageSize.getWidth();
       const margin = 12;
       const maxWidth = pageWidth - margin * 2;
-      let y = 20;
-      const name = result?.structured?.name || "";
-      const contact = result?.structured?.contact || "";
-      const today = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
-      doc.setFontSize(13);
+      let y = 18;
+
+      const name: string = coverLetterData.name || result?.structured?.name || "";
+      const contact: string = coverLetterData.contact || "";
+      const location: string = coverLetterData.location || "";
+      const date: string = coverLetterData.date || new Date().toLocaleDateString("en-US", { year: "numeric", month: "long", day: "numeric" });
+      const recipient: string = coverLetterData.recipient || "Hiring Team";
+      const companyName: string = coverLetterData.company || company || "";
+      const salutation: string = coverLetterData.salutation || `Dear ${recipient},`;
+      const paragraphs: string[] = Array.isArray(coverLetterData.paragraphs)
+        ? coverLetterData.paragraphs
+        : coverLetter.split(/\n\n+/);
+      const signature: string = coverLetterData.signature || name;
+
+      // Header — name
+      doc.setFontSize(15);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
       doc.text(name, margin, y);
-      y += 5.5;
-      doc.setFontSize(9);
-      doc.setFont("helvetica", "normal");
-      doc.setTextColor(60, 60, 60);
-      doc.text(contact, margin, y);
-      y += 5;
-      doc.setFontSize(9);
-      doc.setTextColor(90, 90, 90);
-      const dateWidth = doc.getTextWidth(today);
-      doc.text(today, pageWidth - margin - dateWidth, y);
-      y += 10;
+      y += 6;
+
+      // Contact line
+      if (contact) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.splitTextToSize(contact, maxWidth).forEach((line: string) => {
+          doc.text(line, margin, y);
+          y += 4.5;
+        });
+      }
+
+      // Location line
+      if (location) {
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(60, 60, 60);
+        doc.text(location, margin, y);
+        y += 4.5;
+      }
+
+      // Divider under header
+      y += 3;
       doc.setDrawColor(0, 0, 0);
       doc.line(margin, y, pageWidth - margin, y);
       y += 8;
+
+      // Date
+      doc.setFontSize(9.5);
+      doc.setFont("helvetica", "normal");
+      doc.setTextColor(0, 0, 0);
+      doc.text(date, margin, y);
+      y += 9;
+
+      // Recipient / company block
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text(recipient, margin, y);
+      y += 5;
+      if (companyName) {
+        doc.setFont("helvetica", "normal");
+        doc.text(companyName, margin, y);
+        y += 5;
+      }
+      y += 4;
+
+      // Salutation
       doc.setFontSize(10.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      doc.text("Dear Hiring Manager,", margin, y);
+      doc.text(salutation, margin, y);
       y += 8;
-      const paragraphs = coverLetter.split(/\n\n+/);
+
+      // Body paragraphs
       paragraphs.forEach((para: string) => {
         const paraLines = doc.splitTextToSize(para.trim(), maxWidth);
         paraLines.forEach((line: string) => {
           doc.text(line, margin, y);
           y += 5.5;
         });
-        y += 3;
+        y += 3.5;
       });
-      y += 4;
+
+      // Signature
+      y += 2;
       doc.text("Sincerely,", margin, y);
       y += 7;
       doc.setFont("helvetica", "bold");
-      doc.text(name, margin, y);
-      const fileName = ((company || "cover-letter") + "-" + (role || "application")).replace(/\s+/g, "-").toLowerCase();
+      doc.text(signature, margin, y);
+
+      const fileName = ((companyName || "cover-letter") + "-" + (role || "application")).replace(/\s+/g, "-").toLowerCase();
       doc.save(fileName + "-cover-letter.pdf");
     });
   };
@@ -916,7 +967,7 @@ export default function Tailor() {
                   <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                     Download PDF only
                   </button>
-                  <button className="btn-ghost" onClick={() => { setStep("input"); setResumeText(""); setUploadedFile(null); setUploadError(""); setCoverLetter(""); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
+                  <button className="btn-ghost" onClick={() => { setStep("input"); setResumeText(""); setUploadedFile(null); setUploadError(""); setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
                     {mode === "generate" ? "Generate another" : "Tailor another"}
                   </button>
                 </div>
@@ -1025,7 +1076,7 @@ export default function Tailor() {
                     fontFamily: "'DM Mono', monospace", fontSize: 13,
                     color: COLORS.textDim, lineHeight: 1.8, whiteSpace: "pre-wrap",
                   }}>
-                    {"Dear Hiring Manager,\n\n" + coverLetter + "\n\nSincerely,\n" + (result?.structured?.name || user?.name || "")}
+                    {coverLetter}
                   </div>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     <button onClick={copyToClipboard} className="btn-ghost" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
@@ -1034,7 +1085,7 @@ export default function Tailor() {
                     <button onClick={downloadCoverLetterPDF} className="btn-primary" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
                       Download PDF →
                     </button>
-                    <button onClick={() => { setCoverLetterGenerated(false); setCoverLetter(""); }} className="btn-ghost" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
+                    <button onClick={() => { setCoverLetterGenerated(false); setCoverLetter(""); setCoverLetterData(null); }} className="btn-ghost" style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13 }}>
                       Regenerate
                     </button>
                   </div>

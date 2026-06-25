@@ -38,38 +38,76 @@ export async function POST(req: NextRequest) {
         ?.map((e: any) => `${e.title} at ${e.company}: ${e.bullets?.join(" ")}`)
         .join("\n") || "";
 
+    // Header block for the final letter — prefer discrete profile fields,
+    // fall back to the structured CV's combined contact line.
+    const name = candidateName;
+    let contactLine = "";
+    let locationLine = "";
+    if (profile) {
+      contactLine = [profile.phone, profile.email, profile.linkedin]
+        .filter(Boolean)
+        .join(" | ");
+      locationLine = profile.location || "";
+    }
+    if (!contactLine) contactLine = candidateContact;
+
+    const today = new Date().toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
       messages: [
         {
           role: "system",
-          content: `You are a world-class career coach and writer. Your job is to write a compelling, authentic cover letter that sounds like a confident senior professional — not a template.
+          content: `You are a world-class career coach and writer. You write the BODY of a cover letter that sounds like a confident senior professional — not a template.
 
-COVER LETTER RULES:
-1. Maximum 3 paragraphs — never more
-2. Never exceed one page (250-320 words maximum)
-3. NEVER use these cliche openers:
-   - "I am writing to express my interest"
-   - "I am excited to apply"
-   - "Please find attached my resume"
-   - "I believe I would be a great fit"
-   - "I hope this letter finds you well"
-4. Open with a bold confident hook that mentions the specific role and company and immediately establishes credibility. Example: "Paystack's API infrastructure powers millions of transactions across Africa — and I've spent the last 3 years building exactly the kind of systems that make that possible."
-5. Paragraph 2: highlight 2-3 specific achievements with numbers from the candidate's experience. Connect each achievement directly to what the job requires. Be specific, not generic.
-6. Paragraph 3: confident close. Express genuine interest in the company's mission specifically. End with a clear, confident call to action — never say "I look forward to hearing from you". Use something like "I'd welcome the chance to discuss how I can contribute to [specific thing about the company]."
-7. Tone: confident senior professional. Not desperate, not overly formal, not robotic. Like a great engineer writing to a peer they respect.
-8. No filler sentences. Every sentence must earn its place.
-9. Do NOT include a salutation (e.g. "Dear Hiring Manager,") — it is added automatically by the template.
-10. Perfect American English, active voice only, no passive constructions
-11. Do NOT include a closing or signature (e.g. "Sincerely," or the candidate's name) — it is added automatically by the template.
-12. Separate each paragraph with a blank line (double newline).
+The application assembles the final letter into this exact business-letter structure (you do NOT write the header, date, recipient block, salutation, or signature — only the four body paragraphs):
 
-Respond ONLY with valid JSON — no markdown, no backticks:
-{ "coverLetter": "body paragraphs only here", "wordCount": <number> }`,
+[Candidate Name]
+[Phone] | [Email] | [LinkedIn/Portfolio URL]
+[City, Country]
+
+[Today's Date]
+
+[Hiring Manager Name if known, otherwise "Hiring Team"]
+[Company Name]
+
+Dear [Hiring Manager Name / Hiring Team],
+
+PARAGRAPH 1 — Hook + role interest:
+Open with why you're writing using something specific — a result delivered, a connection to the company's work, or a direct tie to the role. NEVER use "I am writing to apply for" or similar stiff openers.
+
+PARAGRAPH 2 — Proof you can do the job:
+Pick 1-2 concrete achievements relevant to the role from the candidate profile. Use numbers wherever possible. Connect what they did to what the company needs — don't just restate the resume.
+
+PARAGRAPH 3 — Why this company specifically:
+Reference something real and specific about the company (product, mission, recent move) and tie it to why the candidate wants this role.
+
+PARAGRAPH 4 — Close strong:
+Reiterate interest, invite next steps, thank them. Confident, not desperate.
+
+Sincerely,
+[Candidate Name]
+
+RULES:
+- Write EXACTLY four paragraphs, in the order and with the purpose described above
+- Each paragraph max 3-4 sentences
+- Total length across all four paragraphs: 250-320 words
+- Never use cliches: "I hope this finds you well", "I am writing to express my interest", "I would be a great fit", "I look forward to hearing from you"
+- Confident, specific, professional tone throughout
+- Perfect American English, active voice only, no passive constructions
+- Do NOT include the header, date, recipient block, salutation ("Dear ..."), closing ("Sincerely,"), or the candidate's name — the application adds those
+
+Respond ONLY with valid JSON — no markdown, no backticks. Return the four body paragraphs as an array of four strings:
+{ "paragraphs": ["paragraph 1", "paragraph 2", "paragraph 3", "paragraph 4"], "wordCount": <number> }`,
         },
         {
           role: "user",
           content: `ROLE: ${role || "the open position"} at ${company || "the company"}
+TODAY'S DATE: ${today}
 
 JOB DESCRIPTION:
 ${jobDescription}
@@ -89,7 +127,48 @@ ${experienceSummary}`,
     const clean = text.replace(/```json|```/g, "").trim();
     const parsed = JSON.parse(clean);
 
-    return NextResponse.json(parsed);
+    // Normalize the model output into exactly the body paragraphs
+    let paragraphs: string[] = Array.isArray(parsed.paragraphs)
+      ? parsed.paragraphs.map((p: any) => String(p).trim()).filter(Boolean)
+      : typeof parsed.coverLetter === "string"
+        ? parsed.coverLetter.split(/\n\n+/).map((p: string) => p.trim()).filter(Boolean)
+        : [];
+
+    // Build the recipient + signature blocks from data we control (never the model)
+    const recipient = "Hiring Team";
+    const salutation = `Dear ${recipient},`;
+    const headerLines = [name, contactLine, locationLine].filter(Boolean);
+
+    const recipientBlock = [recipient, company].filter(Boolean).join("\n");
+    const bodyText = paragraphs.join("\n\n");
+
+    const coverLetter = [
+      headerLines.join("\n"),
+      today,
+      recipientBlock,
+      salutation,
+      bodyText,
+      `Sincerely,\n${name}`,
+    ].join("\n\n");
+
+    const wordCount =
+      typeof parsed.wordCount === "number"
+        ? parsed.wordCount
+        : bodyText.split(/\s+/).filter(Boolean).length;
+
+    return NextResponse.json({
+      coverLetter,
+      name,
+      contact: contactLine,
+      location: locationLine,
+      date: today,
+      recipient,
+      company: company || "",
+      salutation,
+      paragraphs,
+      signature: name,
+      wordCount,
+    });
   } catch (error) {
     console.error("Cover letter error:", error);
     return NextResponse.json({ error: "Failed to generate cover letter" }, { status: 500 });
