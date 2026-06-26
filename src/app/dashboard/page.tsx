@@ -47,14 +47,6 @@ export default function Dashboard() {
           return;
         }
 
-        // TEMP diagnostic: confirm the actual flag value read from Supabase.
-        console.log(
-          "[onboarding] has_seen_onboarding read from Supabase:",
-          data?.has_seen_onboarding,
-          "| triggeredThisSession:",
-          onboardingTriggeredThisSession
-        );
-
         if (data?.has_seen_onboarding || onboardingTriggeredThisSession) {
           return;
         }
@@ -87,14 +79,9 @@ export default function Dashboard() {
           writeError = upsertError;
         }
 
-        // TEMP diagnostic: confirm the write ran and surface any silent error.
-        console.log(
-          "[onboarding] marked has_seen_onboarding=true — write completed.",
-          "rowsUpdated:",
-          updated?.length ?? 0,
-          "error:",
-          writeError?.message ?? null
-        );
+        if (writeError) {
+          console.error("Failed to mark onboarding as seen:", writeError.message);
+        }
       } catch (err) {
         console.error("Onboarding error:", err);
       }
