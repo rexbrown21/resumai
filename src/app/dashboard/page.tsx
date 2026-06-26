@@ -14,17 +14,28 @@ function getGreeting() {
   return "Good evening";
 }
 
+// Module-scoped guard: survives client-side route changes (e.g. /dashboard
+// -> /tailor -> /dashboard remounts) within the same session, unlike a
+// component ref which resets on unmount. Prevents the auto-tour from firing
+// more than once per loaded session even before the DB flag round-trips.
+let onboardingTriggeredThisSession = false;
+
 export default function Dashboard() {
   const router = useRouter();
   const { user, setUser, resumes, applications } = useApp();
 
-  // First-time onboarding: auto-launch the tour once per user.
+  // First-time onboarding: auto-launch the tour once per user, ever.
   useEffect(() => {
     if (!user?.id) return;
+    // Session-level guard: don't re-run if we already triggered this session,
+    // even if the DB write is still in flight or the component remounted.
+    if (onboardingTriggeredThisSession) return;
+
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     (async () => {
       try {
+        // Read the flag FIRST and wait for it before deciding anything.
         const { data, error } = await supabase
           .from("profiles_data")
           .select("has_seen_onboarding")
@@ -36,20 +47,54 @@ export default function Dashboard() {
           return;
         }
 
-        if (!data?.has_seen_onboarding) {
-          // Let the page render before spotlighting elements.
-          timer = setTimeout(() => startOnboardingTour(), 500);
+        // TEMP diagnostic: confirm the actual flag value read from Supabase.
+        console.log(
+          "[onboarding] has_seen_onboarding read from Supabase:",
+          data?.has_seen_onboarding,
+          "| triggeredThisSession:",
+          onboardingTriggeredThisSession
+        );
 
+        if (data?.has_seen_onboarding || onboardingTriggeredThisSession) {
+          return;
+        }
+
+        // Commit to showing it: flip the session guard immediately so a
+        // concurrent remount can't queue a second tour.
+        onboardingTriggeredThisSession = true;
+
+        // Let the page render before spotlighting elements.
+        timer = setTimeout(() => startOnboardingTour(), 500);
+
+        // Persist "seen" durably. Use UPDATE first — it only touches the flag
+        // and never trips NOT-NULL constraints on other columns (which an
+        // INSERT/upsert tuple would). Fall back to upsert only when no row
+        // exists yet (brand-new user without a profiles_data row).
+        const { data: updated, error: updateError } = await supabase
+          .from("profiles_data")
+          .update({ has_seen_onboarding: true })
+          .eq("user_id", user.id)
+          .select("user_id");
+
+        let writeError = updateError;
+        if (!updateError && (!updated || updated.length === 0)) {
           const { error: upsertError } = await supabase
             .from("profiles_data")
             .upsert(
               { user_id: user.id, has_seen_onboarding: true },
               { onConflict: "user_id" }
             );
-          if (upsertError) {
-            console.error("Failed to mark onboarding as seen:", upsertError.message);
-          }
+          writeError = upsertError;
         }
+
+        // TEMP diagnostic: confirm the write ran and surface any silent error.
+        console.log(
+          "[onboarding] marked has_seen_onboarding=true — write completed.",
+          "rowsUpdated:",
+          updated?.length ?? 0,
+          "error:",
+          writeError?.message ?? null
+        );
       } catch (err) {
         console.error("Onboarding error:", err);
       }
