@@ -164,7 +164,7 @@ export default function Dashboard() {
           </button>
         </div>
 
-        <div className="card" style={{ padding: "40px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+        <div className="card" data-tour="resumes-link-alt" style={{ padding: "40px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
           <div>
             <div className="tag" style={{ marginBottom: 20 }}>Resume vault</div>
             {resumes.length === 0 ? (
@@ -200,7 +200,7 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <div className="card" style={{ padding: "40px", marginTop: 2 }}>
+      <div className="card" data-tour="tracker-link-alt" style={{ padding: "40px", marginTop: 2 }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 24 }}>
           <div className="tag">Recent applications</div>
           {applications.length > 0 && (
