@@ -29,8 +29,7 @@ export default function Tailor() {
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
   const [coverLetterError, setCoverLetterError] = useState("");
   const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
-  const [jobUrl, setJobUrl] = useState("");
-  const [fetching, setFetching] = useState(false);
+  const [showAllResumes, setShowAllResumes] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -203,30 +202,6 @@ export default function Tailor() {
     } catch (err: any) {
       setError(err.message || "Something went wrong. Please try again.");
       setStep("input");
-    }
-  };
-
-  const fetchJobFromUrl = async () => {
-    if (!jobUrl) return;
-    setFetching(true);
-    setError("");
-    try {
-      const res = await fetch("/api/fetch-job", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ url: jobUrl }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError(data.error || "Could not fetch this page. Paste the job description manually.");
-      } else {
-        setJobDesc(data.jobDescription);
-        setError("");
-      }
-    } catch {
-      setError("Could not fetch this page. Paste the job description manually.");
-    } finally {
-      setFetching(false);
     }
   };
 
@@ -635,38 +610,6 @@ export default function Tailor() {
         {step === "input" && (
           <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
 
-            {/* URL Fetch */}
-            <div className="card" style={{ padding: "32px" }}>
-              <div className="tag" style={{ marginBottom: 16 }}>
-                Fetch from URL <span style={{ color: COLORS.accent, marginLeft: 6 }}>beta</span>
-              </div>
-              <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, marginBottom: 12 }}>
-                Paste a job posting link and we'll extract the description automatically.
-              </p>
-              <div style={{ display: "flex", gap: 8 }}>
-                <input
-                  placeholder="https://jobs.lever.co/company/job-id"
-                  value={jobUrl}
-                  onChange={e => setJobUrl(e.target.value)}
-                  onKeyDown={e => e.key === "Enter" && fetchJobFromUrl()}
-                  style={{ flex: 1, padding: "12px 16px", borderRadius: 2, fontSize: 13, fontFamily: "'DM Mono', monospace" }}
-                />
-                <button
-                  onClick={fetchJobFromUrl}
-                  disabled={!jobUrl || fetching}
-                  className="btn-primary"
-                  style={{ padding: "12px 20px", borderRadius: 2, fontSize: 13, whiteSpace: "nowrap" }}
-                >
-                  {fetching ? "Fetching..." : "Fetch →"}
-                </button>
-              </div>
-              {jobDesc && !error && (
-                <p className="mono" style={{ color: COLORS.success, fontSize: 11, marginTop: 8 }}>
-                  ✓ Job description fetched — review below and edit if needed
-                </p>
-              )}
-            </div>
-
             {mode === "generate" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
@@ -743,7 +686,7 @@ export default function Tailor() {
                           <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
                             No resumes added yet.
                           </p>
-                        ) : resumes.map(r => (
+                        ) : (showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
                           <div key={r.id} onClick={() => setSelectedResume(r)} style={{
                             padding: "14px 18px",
                             border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
@@ -756,6 +699,18 @@ export default function Tailor() {
                           </div>
                         ))}
                       </div>
+                      {resumes.length > 6 && (
+                        <button
+                          onClick={() => setShowAllResumes(v => !v)}
+                          style={{
+                            background: "transparent", border: "none", cursor: "pointer",
+                            color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                            marginTop: 12, padding: 0, alignSelf: "flex-start",
+                          }}
+                        >
+                          {showAllResumes ? "Show less" : `View all (${resumes.length})`}
+                        </button>
+                      )}
                     </div>
                     <button className="btn-primary" onClick={analyze} disabled={!jobDesc || !resumeText}
                       style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
