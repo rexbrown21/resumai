@@ -12,6 +12,7 @@ export interface Resume {
   uploaded: string;
   tailored: number;
   fileUrl?: string;
+  extractedText?: string;
   structured_data?: {
     name: string;
     contact: string;

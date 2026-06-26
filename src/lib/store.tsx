@@ -102,6 +102,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         uploaded: new Date(r.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         tailored: r.tailored_count || 0,
         fileUrl: r.file_url || undefined,
+        extractedText: r.extracted_text || undefined,
         structured_data: r.structured_data || null,
       })));
     }
@@ -141,6 +142,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         type: r.type,
         notes: r.notes,
         tailored_count: 0,
+        extracted_text: r.extractedText ?? null,
       })
       .select()
       .single();
@@ -155,6 +157,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         notes: data.notes || "",
         uploaded: new Date(data.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
         tailored: 0,
+        extractedText: data.extracted_text || undefined,
         structured_data: null,
       }, ...prev]);
     }

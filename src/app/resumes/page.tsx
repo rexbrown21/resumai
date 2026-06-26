@@ -5,6 +5,7 @@ import { useApp } from "@/lib/store";
 import { COLORS, RESUME_TYPES } from "@/lib/constants";
 import { Resume } from "@/types";
 import AuthGuard from "@/components/AuthGuard";
+import { extractResumeText } from "@/lib/extractResumeText";
 
 export default function Resumes() {
   const router = useRouter();
@@ -12,11 +13,74 @@ export default function Resumes() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Technical" as Resume["type"], notes: "" });
   const [previewResume, setPreviewResume] = useState<Resume | null>(null);
+  const [file, setFile] = useState<File | null>(null);
+  const [extractedText, setExtractedText] = useState("");
+  const [parsing, setParsing] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const resetAddForm = () => {
+    setForm({ name: "", type: "Technical", notes: "" });
+    setFile(null);
+    setExtractedText("");
+    setFormError("");
+  };
+
+  const toggleAdd = () => {
+    setShowAdd(prev => {
+      if (prev) resetAddForm();
+      return !prev;
+    });
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = e.target.files?.[0];
+    e.target.value = ""; // allow re-selecting the same file
+    if (!selected) return;
+
+    const lower = selected.name.toLowerCase();
+    if (!lower.endsWith(".pdf") && !lower.endsWith(".docx")) {
+      setFile(null);
+      setExtractedText("");
+      setFormError("Couldn't read this file. Please try a different PDF or DOCX file.");
+      return;
+    }
+
+    setParsing(true);
+    setFormError("");
+    setFile(selected);
+    setExtractedText("");
+    try {
+      const text = await extractResumeText(selected);
+      setExtractedText(text);
+    } catch (err) {
+      console.error("Resume parse error:", err);
+      setFile(null);
+      setExtractedText("");
+      setFormError("Couldn't read this file. Please try a different PDF or DOCX file.");
+    } finally {
+      setParsing(false);
+    }
+  };
 
   const handleAddResume = async () => {
-    if (!form.name) return;
-    await addResume({ name: form.name, type: form.type, notes: form.notes, uploaded: "", tailored: 0 });
-    setForm({ name: "", type: "Technical", notes: "" });
+    if (!form.name) { setFormError("Please give this resume a name."); return; }
+    if (!file || !extractedText) {
+      setFormError("Please upload your resume file (PDF or DOCX) to continue.");
+      return;
+    }
+
+    setSaving(true);
+    await addResume({
+      name: form.name,
+      type: form.type,
+      notes: form.notes,
+      uploaded: "",
+      tailored: 0,
+      extractedText,
+    });
+    setSaving(false);
+    resetAddForm();
     setShowAdd(false);
   };
 
@@ -264,7 +328,7 @@ export default function Resumes() {
               Store different versions. AI picks the best fit for each job.
             </p>
           </div>
-          <button className="btn-primary" onClick={() => setShowAdd(!showAdd)}
+          <button className="btn-primary" onClick={toggleAdd}
             style={{ padding: "12px 24px", borderRadius: 2, marginTop: 24 }}>
             {showAdd ? "Cancel" : "+ Add resume"}
           </button>
@@ -295,17 +359,53 @@ export default function Resumes() {
               value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })}
               style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginTop: 12, height: 80, resize: "none" }}
             />
-            <div style={{
-              border: `2px dashed ${COLORS.border}`, borderRadius: 2,
-              padding: "32px", textAlign: "center", marginTop: 12, cursor: "pointer",
-            }}>
-              <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
-                Drop PDF or DOCX here · or click to browse
+            <input
+              type="file"
+              id="resume-vault-file"
+              accept=".pdf,.docx"
+              onChange={handleFileChange}
+              style={{ display: "none" }}
+            />
+            <label
+              htmlFor="resume-vault-file"
+              style={{
+                display: "block",
+                border: `2px dashed ${file ? COLORS.accent : COLORS.border}`, borderRadius: 2,
+                padding: "32px", textAlign: "center", marginTop: 12,
+                cursor: parsing ? "wait" : "pointer",
+                transition: "border-color 0.2s",
+              }}
+            >
+              {parsing ? (
+                <p className="mono" style={{ color: COLORS.textDim, fontSize: 13 }}>
+                  Reading your resume...
+                </p>
+              ) : file ? (
+                <p className="mono" style={{ color: COLORS.success, fontSize: 13 }}>
+                  ✓ {file.name} · click to replace
+                </p>
+              ) : (
+                <>
+                  <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
+                    Drop PDF or DOCX here · or click to browse
+                  </p>
+                  <p className="mono" style={{ color: COLORS.textMuted, fontSize: 11, marginTop: 6 }}>
+                    Required — PDF or DOCX
+                  </p>
+                </>
+              )}
+            </label>
+
+            {formError && (
+              <p className="mono" style={{ color: COLORS.danger, fontSize: 12, marginTop: 10 }}>
+                {formError}
               </p>
-            </div>
+            )}
+
             <button className="btn-primary" onClick={handleAddResume}
+              disabled={!form.name || !file || !extractedText || parsing || saving}
               style={{ padding: "12px 28px", borderRadius: 2, marginTop: 16 }}>
-              Save resume →
+              {parsing ? "Reading your resume..." : saving ? "Saving..." : "Save resume →"}
             </button>
           </div>
         )}
