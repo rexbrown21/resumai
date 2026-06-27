@@ -13,6 +13,7 @@ export default function Resumes() {
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({ name: "", type: "Technical" as Resume["type"], notes: "" });
   const [previewResume, setPreviewResume] = useState<Resume | null>(null);
+  const [noContentId, setNoContentId] = useState<number | null>(null);
   const [file, setFile] = useState<File | null>(null);
   const [extractedText, setExtractedText] = useState("");
   const [parsing, setParsing] = useState(false);
@@ -423,7 +424,13 @@ export default function Resumes() {
                 + Add your first resume
               </button>
             </div>
-          ) : resumes.map(r => (
+          ) : resumes.map(r => {
+            // Legacy "name-only" entries have neither uploaded text nor a
+            // generated preview. Tailor-generated resumes have structured_data
+            // (a working preview) even without extracted_text, so they count as
+            // having content.
+            const hasContent = !!(r.extractedText?.trim() || r.structured_data);
+            return (
             <div key={r.id} className="card" style={{
               padding: "28px 32px", display: "flex",
               alignItems: "center", justifyContent: "space-between",
@@ -435,17 +442,40 @@ export default function Resumes() {
                   display: "flex", alignItems: "center", justifyContent: "center", fontSize: 18,
                 }}>📄</div>
                 <div>
-                  <div style={{ fontWeight: 700, fontSize: 16, color: COLORS.text }}>{r.name}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                    <div style={{ fontWeight: 700, fontSize: 16, color: COLORS.text }}>{r.name}</div>
+                    {!hasContent && (
+                      <span className="tag" style={{
+                        color: COLORS.danger,
+                        borderColor: `${COLORS.danger}55`,
+                        background: `${COLORS.danger}12`,
+                      }}>
+                        No content — re-upload
+                      </span>
+                    )}
+                  </div>
                   <div className="mono" style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 4 }}>
                     Added {r.uploaded} · Used {r.tailored}× in tailoring
                     {r.structured_data && <span style={{ color: COLORS.accent, marginLeft: 8 }}>· Preview available</span>}
                   </div>
+                  {noContentId === r.id && (
+                    <div className="mono" style={{ color: COLORS.danger, fontSize: 12, marginTop: 8, lineHeight: 1.6 }}>
+                      This resume has no saved content. Please delete and re-upload the file.
+                    </div>
+                  )}
                 </div>
               </div>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <span className="tag">{r.type}</span>
                 <button
-                  onClick={() => setPreviewResume(r)}
+                  onClick={() => {
+                    if (hasContent) {
+                      setNoContentId(null);
+                      setPreviewResume(r);
+                    } else {
+                      setNoContentId(prev => (prev === r.id ? null : r.id));
+                    }
+                  }}
                   style={{
                     padding: "6px 16px", borderRadius: 2, fontSize: 12,
                     fontFamily: "'DM Mono', monospace", cursor: "pointer",
@@ -469,7 +499,8 @@ export default function Resumes() {
                 >×</button>
               </div>
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </AuthGuard>
