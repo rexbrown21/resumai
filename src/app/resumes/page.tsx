@@ -278,12 +278,29 @@ export default function Resumes() {
                 </>
               )}
             </div>
+          ) : previewResume.extractedText?.trim() ? (
+            <div>
+              <div style={{ fontSize: 10, fontWeight: 700, color: COLORS.text, letterSpacing: "0.08em", borderBottom: `1px solid ${COLORS.border}`, paddingBottom: 3, marginBottom: 10 }}>
+                EXTRACTED RESUME TEXT
+              </div>
+              <div style={{
+                fontFamily: "'DM Mono', monospace", fontSize: 12, color: COLORS.textDim,
+                lineHeight: 1.7, whiteSpace: "pre-wrap", wordBreak: "break-word",
+                maxHeight: 500, overflowY: "auto",
+                background: "var(--surface-2)", border: `1px solid ${COLORS.border}`,
+                borderRadius: 2, padding: "16px",
+              }}>
+                {previewResume.extractedText}
+              </div>
+            </div>
           ) : (
-            <div style={{ border: `1px dashed ${COLORS.border}`, padding: "24px", borderRadius: 2, textAlign: "center", marginBottom: 24 }}>
-              <div style={{ fontSize: 24, marginBottom: 12 }}>📄</div>
+            <div style={{ border: `1px solid ${COLORS.danger}44`, background: `${COLORS.danger}10`, padding: "24px", borderRadius: 2, textAlign: "center", marginBottom: 24 }}>
+              <div style={{ fontSize: 24, marginBottom: 12 }}>⚠️</div>
+              <p className="mono" style={{ color: COLORS.danger, fontSize: 12, lineHeight: 1.7, fontWeight: 600, marginBottom: 6 }}>
+                No content — re-upload
+              </p>
               <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, lineHeight: 1.7 }}>
-                No preview available for manually added resumes.<br />
-                Use the Tailor page to generate a tailored version.
+                This resume has no saved content. Please delete and re-upload the file.
               </p>
             </div>
           )}
@@ -299,11 +316,15 @@ export default function Resumes() {
               </button>
             )}
             <button
-              onClick={() => { setPreviewResume(null); router.push("/tailor"); }}
+              onClick={() => {
+                localStorage.setItem("tailor_preselect_resume_id", String(previewResume.id));
+                setPreviewResume(null);
+                router.push("/tailor");
+              }}
               className="btn-ghost"
               style={{ padding: "12px", borderRadius: 2, fontSize: 13 }}
             >
-              Tailor this resume
+              Optimize for a job →
             </button>
           </div>
         </div>

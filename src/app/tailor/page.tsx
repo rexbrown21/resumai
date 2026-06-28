@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useApp } from "@/lib/store";
 import { COLORS } from "@/lib/constants";
@@ -143,6 +143,27 @@ export default function Tailor() {
       setSelectedHasNoContent(true);
     }
   };
+
+  // Pre-select a resume when arriving from the vault's "Optimize for a job"
+  // button (id passed via localStorage). Runs once after resumes have loaded.
+  const preselectApplied = useRef(false);
+  useEffect(() => {
+    if (preselectApplied.current) return;
+    if (resumes.length === 0) return;
+
+    const preselectId = localStorage.getItem("tailor_preselect_resume_id");
+    if (!preselectId) return;
+
+    localStorage.removeItem("tailor_preselect_resume_id");
+    preselectApplied.current = true;
+
+    const match = resumes.find(r => String(r.id) === preselectId);
+    if (match) {
+      setMode("tailor");
+      selectResume(match);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumes]);
 
   const saveToVault = async (data: any) => {
     if (!user?.id) return;
