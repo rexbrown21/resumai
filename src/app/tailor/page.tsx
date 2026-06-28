@@ -19,6 +19,8 @@ export default function Tailor() {
   const [role, setRole] = useState("");
   const [resumeText, setResumeText] = useState("");
   const [selectedResume, setSelectedResume] = useState<Resume | null>(null);
+  const [loadedResumeName, setLoadedResumeName] = useState<string | null>(null);
+  const [selectedHasNoContent, setSelectedHasNoContent] = useState(false);
   const [step, setStep] = useState<Step>("input");
   const [result, setResult] = useState<TailorResult & { tailoredResume?: string } | null>(null);
   const [error, setError] = useState("");
@@ -104,12 +106,41 @@ export default function Tailor() {
 
       setUploadedFile(file);
       setResumeText(text.trim());
+      // Text now comes from the uploaded file, not a vault resume.
+      setLoadedResumeName(null);
+      setSelectedHasNoContent(false);
     } catch (err: any) {
       console.error("File parse error:", err);
       setUploadError(err.message || "Failed to read file. Try pasting the text instead.");
     } finally {
       setUploading(false);
       e.target.value = "";
+    }
+  };
+
+  // Selecting a vault resume auto-fills the resume text box from its saved
+  // extracted text. Clicking the selected one again toggles it off.
+  const selectResume = (r: Resume) => {
+    if (selectedResume?.id === r.id) {
+      setSelectedResume(null);
+      setResumeText("");
+      setLoadedResumeName(null);
+      setSelectedHasNoContent(false);
+      return;
+    }
+
+    setSelectedResume(r);
+    setUploadedFile(null);
+    setResumeInputMode("paste"); // show the textarea so the fill is visible
+
+    if (r.extractedText && r.extractedText.trim()) {
+      setResumeText(r.extractedText);
+      setLoadedResumeName(r.name);
+      setSelectedHasNoContent(false);
+    } else {
+      // Legacy resume with no saved content — keep whatever the user typed.
+      setLoadedResumeName(null);
+      setSelectedHasNoContent(true);
     }
   };
 
@@ -412,6 +443,7 @@ export default function Tailor() {
       setStep("input");
       setJobDesc(""); setCompany(""); setRole("");
       setResult(null); setSelectedResume(null); setResumeText("");
+      setLoadedResumeName(null); setSelectedHasNoContent(false);
       setSavedToVault(false);
       setUploadedFile(null); setUploadError("");
       setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
@@ -687,7 +719,7 @@ export default function Tailor() {
                             No resumes added yet.
                           </p>
                         ) : (showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
-                          <div key={r.id} onClick={() => setSelectedResume(r)} style={{
+                          <div key={r.id} onClick={() => selectResume(r)} style={{
                             padding: "14px 18px",
                             border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
                             background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
@@ -720,8 +752,19 @@ export default function Tailor() {
                 </div>
 
                 <div className="card" style={{ padding: "32px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16 }}>
-                    <div className="tag">Your resume</div>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+                      <div className="tag">Your resume</div>
+                      {loadedResumeName && (
+                        <span className="tag" style={{
+                          color: COLORS.accent,
+                          borderColor: `${COLORS.accent}55`,
+                          background: `${COLORS.accent}12`,
+                        }}>
+                          Loaded from: {loadedResumeName}
+                        </span>
+                      )}
+                    </div>
                     <div style={{ display: "flex", gap: 2 }}>
                       {(["upload", "paste"] as const).map(m => (
                         <button key={m} onClick={() => setResumeInputMode(m)} style={{
@@ -736,6 +779,12 @@ export default function Tailor() {
                       ))}
                     </div>
                   </div>
+
+                  {selectedHasNoContent && (
+                    <p className="mono" style={{ color: COLORS.danger, fontSize: 12, marginBottom: 12, lineHeight: 1.6 }}>
+                      This resume has no saved content — please paste your resume text manually below.
+                    </p>
+                  )}
 
                   {resumeInputMode === "upload" ? (
                     uploadedFile ? (
@@ -922,7 +971,7 @@ export default function Tailor() {
                   <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                     Download PDF only
                   </button>
-                  <button className="btn-ghost" onClick={() => { setStep("input"); setResumeText(""); setUploadedFile(null); setUploadError(""); setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
+                  <button className="btn-ghost" onClick={() => { setStep("input"); setResumeText(""); setSelectedResume(null); setLoadedResumeName(null); setSelectedHasNoContent(false); setUploadedFile(null); setUploadError(""); setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
                     {mode === "generate" ? "Generate another" : "Tailor another"}
                   </button>
                 </div>
