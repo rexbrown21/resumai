@@ -10,6 +10,56 @@ import { supabase } from "@/lib/supabase";
 type Step = "input" | "analyzing" | "result";
 type Mode = "tailor" | "generate";
 
+// Converts a stored structured_data resume (from a previous AI generation)
+// into readable plain text, so it can populate the resume text box just like
+// an uploaded file's extracted text.
+function structuredResumeToText(s: NonNullable<Resume["structured_data"]>): string {
+  const lines: string[] = [];
+
+  if (s.name) lines.push(s.name);
+  if (s.contact) lines.push(s.contact);
+  if (s.summary) lines.push("", "SUMMARY", s.summary);
+
+  if (s.experience?.length) {
+    lines.push("", "EXPERIENCE");
+    s.experience.forEach(exp => {
+      lines.push(`${exp.title} — ${exp.company}`);
+      const meta = [exp.location, exp.period].filter(Boolean).join(" | ");
+      if (meta) lines.push(meta);
+      exp.bullets?.forEach(b => lines.push(`• ${b}`));
+      lines.push("");
+    });
+  }
+
+  if (s.projects?.length) {
+    lines.push("PROJECTS");
+    s.projects.forEach(proj => {
+      lines.push(proj.period ? `${proj.name} (${proj.period})` : proj.name);
+      proj.bullets?.forEach(b => lines.push(`• ${b}`));
+      lines.push("");
+    });
+  }
+
+  if (s.education?.length) {
+    lines.push("EDUCATION");
+    s.education.forEach(edu => {
+      lines.push(edu.school);
+      const degree = [edu.degree, edu.gpa ? `GPA: ${edu.gpa}` : ""].filter(Boolean).join(" | ");
+      if (degree) lines.push(degree);
+      const meta = [edu.location, edu.period].filter(Boolean).join(" | ");
+      if (meta) lines.push(meta);
+      lines.push("");
+    });
+  }
+
+  if (s.skills && Object.keys(s.skills).length) {
+    lines.push("SKILLS");
+    Object.entries(s.skills).forEach(([category, value]) => lines.push(`${category}: ${value}`));
+  }
+
+  return lines.join("\n").trim();
+}
+
 export default function Tailor() {
   const router = useRouter();
   const { resumes, setResumes, addApplication, user } = useApp();
@@ -133,12 +183,22 @@ export default function Tailor() {
     setUploadedFile(null);
     setResumeInputMode("paste"); // show the textarea so the fill is visible
 
+    // Prefer the uploaded file's extracted text; otherwise fall back to a
+    // previously AI-generated resume's structured_data (rendered to plain text).
+    const structuredText = r.structured_data
+      ? structuredResumeToText(r.structured_data)
+      : "";
+
     if (r.extractedText && r.extractedText.trim()) {
       setResumeText(r.extractedText);
       setLoadedResumeName(r.name);
       setSelectedHasNoContent(false);
+    } else if (structuredText) {
+      setResumeText(structuredText);
+      setLoadedResumeName(r.name);
+      setSelectedHasNoContent(false);
     } else {
-      // Legacy resume with no saved content — keep whatever the user typed.
+      // No extracted text and no structured data — keep whatever the user typed.
       setLoadedResumeName(null);
       setSelectedHasNoContent(true);
     }
