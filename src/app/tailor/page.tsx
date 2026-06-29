@@ -76,6 +76,7 @@ export default function Tailor() {
   const [error, setError] = useState("");
   const [profileMissing, setProfileMissing] = useState(false);
   const [savedToVault, setSavedToVault] = useState(false);
+  const [appLogged, setAppLogged] = useState(false);
   const [coverLetter, setCoverLetter] = useState("");
   const [coverLetterData, setCoverLetterData] = useState<any>(null);
   const [coverLetterLoading, setCoverLetterLoading] = useState(false);
@@ -244,13 +245,19 @@ export default function Tailor() {
 
     if (saved) {
       setSavedToVault(true);
+      // Build local state from the ACTUAL saved row so every field (notably
+      // structured_data / extracted_text) is populated immediately — otherwise
+      // the vault shows "No content" until a refresh re-fetches from Supabase.
       setResumes(prev => [{
         id: saved.id,
         name: saved.name,
         type: saved.type,
         notes: saved.notes || "",
         uploaded: new Date(saved.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }),
-        tailored: 1,
+        tailored: saved.tailored_count || 1,
+        fileUrl: saved.file_url || undefined,
+        extractedText: saved.extracted_text || undefined,
+        structured_data: saved.structured_data || null,
       }, ...prev]);
     }
   };
@@ -504,7 +511,7 @@ export default function Tailor() {
     });
   };
 
-    const logApplication = () => {
+  const logApplication = () => {
     if (!result) return;
     downloadResume();
 
@@ -520,15 +527,21 @@ export default function Tailor() {
       notes: "",
     });
 
-    setTimeout(() => {
-      setStep("input");
-      setJobDesc(""); setCompany(""); setRole("");
-      setResult(null); setSelectedResume(null); setResumeText("");
-      setLoadedResumeName(null); setSelectedHasNoContent(false);
-      setSavedToVault(false);
-      setUploadedFile(null); setUploadError("");
-      setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
-    }, 1500);
+    // Stay on the result page so the user can still generate a cover letter.
+    // Resetting only happens when they explicitly click "Tailor another".
+    setAppLogged(true);
+  };
+
+  // Full reset — the only path back to a blank form. Triggered explicitly by
+  // the "Tailor another" / "Generate another" button.
+  const resetForm = () => {
+    setStep("input");
+    setJobDesc(""); setCompany(""); setRole("");
+    setResult(null); setSelectedResume(null); setResumeText("");
+    setLoadedResumeName(null); setSelectedHasNoContent(false);
+    setSavedToVault(false); setAppLogged(false);
+    setUploadedFile(null); setUploadError("");
+    setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
   };
 
   const generateCoverLetter = async () => {
@@ -1047,13 +1060,22 @@ export default function Tailor() {
                   <div className="mono" style={{ fontSize: 11, color: savedToVault ? COLORS.success : COLORS.textMuted, marginBottom: 4 }}>
                     {savedToVault ? "✓ Saved to resume vault" : "Saving to vault..."}
                   </div>
-                  <button className="btn-primary" onClick={logApplication} disabled={!savedToVault} style={{ padding: "14px", borderRadius: 2 }}>
-                    Download & log application →
+                  {appLogged && (
+                    <div className="mono" style={{
+                      fontSize: 12, color: COLORS.success, padding: "10px 14px",
+                      background: `${COLORS.success}12`, border: `1px solid ${COLORS.success}40`,
+                      borderRadius: 2, marginBottom: 4,
+                    }}>
+                      ✓ Application logged successfully — generate a cover letter below before starting over.
+                    </div>
+                  )}
+                  <button className="btn-primary" onClick={appLogged ? downloadResume : logApplication} disabled={!savedToVault} style={{ padding: "14px", borderRadius: 2 }}>
+                    {appLogged ? "✓ Logged — Download again" : "Download & log application →"}
                   </button>
                   <button className="btn-ghost" onClick={downloadResume} style={{ padding: "12px", borderRadius: 2 }}>
                     Download PDF only
                   </button>
-                  <button className="btn-ghost" onClick={() => { setStep("input"); setResumeText(""); setSelectedResume(null); setLoadedResumeName(null); setSelectedHasNoContent(false); setUploadedFile(null); setUploadError(""); setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError(""); }} style={{ padding: "12px", borderRadius: 2 }}>
+                  <button className="btn-ghost" onClick={resetForm} style={{ padding: "12px", borderRadius: 2 }}>
                     {mode === "generate" ? "Generate another" : "Tailor another"}
                   </button>
                 </div>
