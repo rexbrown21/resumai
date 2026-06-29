@@ -83,6 +83,7 @@ export default function Tailor() {
   const [coverLetterError, setCoverLetterError] = useState("");
   const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
   const [showAllResumes, setShowAllResumes] = useState(false);
+  const [resumeListExpanded, setResumeListExpanded] = useState(false);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -539,6 +540,7 @@ export default function Tailor() {
     setJobDesc(""); setCompany(""); setRole("");
     setResult(null); setSelectedResume(null); setResumeText("");
     setLoadedResumeName(null); setSelectedHasNoContent(false);
+    setResumeListExpanded(false);
     setSavedToVault(false); setAppLogged(false);
     setUploadedFile(null); setUploadError("");
     setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
@@ -884,40 +886,84 @@ export default function Tailor() {
                   )}
                 </div>
 
-                {/* Select base resume from vault */}
-                <div className="card" style={{ padding: "32px" }}>
-                  <div className="tag" style={{ marginBottom: 20 }}>Select base resume</div>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                    {resumes.length === 0 ? (
-                      <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
-                        No resumes added yet.
-                      </p>
-                    ) : (showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
-                      <div key={r.id} onClick={() => selectResume(r)} style={{
-                        padding: "14px 18px",
-                        border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
-                        background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
-                        cursor: "pointer", transition: "all 0.2s",
-                        display: "flex", justifyContent: "space-between", alignItems: "center",
-                      }}>
-                        <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
-                        <span className="tag">{r.type}</span>
-                      </div>
-                    ))}
-                  </div>
-                  {resumes.length > 6 && (
-                    <button
-                      onClick={() => setShowAllResumes(v => !v)}
-                      style={{
-                        background: "transparent", border: "none", cursor: "pointer",
-                        color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
-                        marginTop: 12, padding: 0, alignSelf: "flex-start",
-                      }}
-                    >
-                      {showAllResumes ? "Show less" : `View all (${resumes.length})`}
-                    </button>
-                  )}
-                </div>
+                {/* OR divider + select-from-vault (only when the user has saved resumes) */}
+                {resumes.length > 0 && (
+                  <>
+                    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 0" }}>
+                      <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                      <span className="mono" style={{ fontSize: 12, color: COLORS.textMuted, letterSpacing: "0.15em" }}>OR</span>
+                      <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                    </div>
+
+                    <div className="card" style={{ padding: "32px" }}>
+                      {selectedResume && !resumeListExpanded ? (
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                          <span className="mono" style={{ fontSize: 13, color: COLORS.success }}>
+                            ✓ Using: {selectedResume.name}
+                          </span>
+                          <button
+                            onClick={() => setResumeListExpanded(true)}
+                            style={{
+                              background: "transparent", border: "none", cursor: "pointer",
+                              color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace", padding: 0,
+                            }}
+                          >
+                            change
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <button
+                            onClick={() => setResumeListExpanded(v => !v)}
+                            style={{
+                              width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
+                              background: "transparent", border: "none", cursor: "pointer", padding: 0,
+                              color: COLORS.text, fontSize: 14, fontWeight: 600, fontFamily: "'Syne', sans-serif",
+                            }}
+                          >
+                            <span>Choose from your saved resumes ({resumes.length})</span>
+                            <span style={{
+                              color: COLORS.textDim, fontSize: 12, lineHeight: 1,
+                              transform: resumeListExpanded ? "rotate(180deg)" : "rotate(0deg)",
+                              transition: "transform 0.2s",
+                            }}>▾</span>
+                          </button>
+
+                          {resumeListExpanded && (
+                            <>
+                              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
+                                {(showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
+                                  <div key={r.id} onClick={() => { selectResume(r); setResumeListExpanded(false); }} style={{
+                                    padding: "14px 18px",
+                                    border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
+                                    background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
+                                    cursor: "pointer", transition: "all 0.2s",
+                                    display: "flex", justifyContent: "space-between", alignItems: "center",
+                                  }}>
+                                    <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
+                                    <span className="tag">{r.type}</span>
+                                  </div>
+                                ))}
+                              </div>
+                              {resumes.length > 6 && (
+                                <button
+                                  onClick={() => setShowAllResumes(v => !v)}
+                                  style={{
+                                    background: "transparent", border: "none", cursor: "pointer",
+                                    color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                                    marginTop: 12, padding: 0, alignSelf: "flex-start",
+                                  }}
+                                >
+                                  {showAllResumes ? "Show less" : `View all (${resumes.length})`}
+                                </button>
+                              )}
+                            </>
+                          )}
+                        </>
+                      )}
+                    </div>
+                  </>
+                )}
 
                 {/* Job details */}
                 <div className="card" style={{ padding: "32px" }}>
