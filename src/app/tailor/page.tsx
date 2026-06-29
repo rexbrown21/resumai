@@ -767,71 +767,7 @@ export default function Tailor() {
               </div>
             ) : (
               <>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div className="card" style={{ padding: "32px" }}>
-                      <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
-                      <input placeholder="Company name" value={company}
-                        onChange={e => setCompany(e.target.value)}
-                        style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
-                      <input placeholder="Role title" value={role}
-                        onChange={e => setRole(e.target.value)}
-                        style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
-                    </div>
-                    <div className="card" style={{ padding: "32px", flex: 1 }}>
-                      <div className="tag" style={{ marginBottom: 16 }}>Job description</div>
-                      <textarea
-                        placeholder="Paste the full job description here..."
-                        value={jobDesc} onChange={e => setJobDesc(e.target.value)}
-                        style={{
-                          width: "100%", height: 280, padding: "14px 16px", borderRadius: 2,
-                          fontSize: 13, lineHeight: 1.7, resize: "none",
-                          fontFamily: "'DM Mono', monospace",
-                        }} />
-                    </div>
-                  </div>
-
-                  <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                    <div className="card" style={{ padding: "32px" }}>
-                      <div className="tag" style={{ marginBottom: 20 }}>Select base resume</div>
-                      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                        {resumes.length === 0 ? (
-                          <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
-                            No resumes added yet.
-                          </p>
-                        ) : (showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
-                          <div key={r.id} onClick={() => selectResume(r)} style={{
-                            padding: "14px 18px",
-                            border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
-                            background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
-                            cursor: "pointer", transition: "all 0.2s",
-                            display: "flex", justifyContent: "space-between", alignItems: "center",
-                          }}>
-                            <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
-                            <span className="tag">{r.type}</span>
-                          </div>
-                        ))}
-                      </div>
-                      {resumes.length > 6 && (
-                        <button
-                          onClick={() => setShowAllResumes(v => !v)}
-                          style={{
-                            background: "transparent", border: "none", cursor: "pointer",
-                            color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
-                            marginTop: 12, padding: 0, alignSelf: "flex-start",
-                          }}
-                        >
-                          {showAllResumes ? "Show less" : `View all (${resumes.length})`}
-                        </button>
-                      )}
-                    </div>
-                    <button className="btn-primary" onClick={analyze} disabled={!jobDesc || !resumeText}
-                      style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
-                      Analyze & tailor &rarr;
-                    </button>
-                  </div>
-                </div>
-
+                {/* Your resume text (upload / paste + select from vault) — first */}
                 <div className="card" style={{ padding: "32px" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
@@ -934,6 +870,71 @@ export default function Tailor() {
                       }} />
                   )}
                 </div>
+
+                {/* Select base resume from vault */}
+                <div className="card" style={{ padding: "32px" }}>
+                  <div className="tag" style={{ marginBottom: 20 }}>Select base resume</div>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                    {resumes.length === 0 ? (
+                      <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13 }}>
+                        No resumes added yet.
+                      </p>
+                    ) : (showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
+                      <div key={r.id} onClick={() => selectResume(r)} style={{
+                        padding: "14px 18px",
+                        border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
+                        background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
+                        cursor: "pointer", transition: "all 0.2s",
+                        display: "flex", justifyContent: "space-between", alignItems: "center",
+                      }}>
+                        <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
+                        <span className="tag">{r.type}</span>
+                      </div>
+                    ))}
+                  </div>
+                  {resumes.length > 6 && (
+                    <button
+                      onClick={() => setShowAllResumes(v => !v)}
+                      style={{
+                        background: "transparent", border: "none", cursor: "pointer",
+                        color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                        marginTop: 12, padding: 0, alignSelf: "flex-start",
+                      }}
+                    >
+                      {showAllResumes ? "Show less" : `View all (${resumes.length})`}
+                    </button>
+                  )}
+                </div>
+
+                {/* Job details */}
+                <div className="card" style={{ padding: "32px" }}>
+                  <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
+                  <input placeholder="Company name" value={company}
+                    onChange={e => setCompany(e.target.value)}
+                    style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
+                  <input placeholder="Role title" value={role}
+                    onChange={e => setRole(e.target.value)}
+                    style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
+                </div>
+
+                {/* Job description */}
+                <div className="card" style={{ padding: "32px" }}>
+                  <div className="tag" style={{ marginBottom: 16 }}>Job description</div>
+                  <textarea
+                    placeholder="Paste the full job description here..."
+                    value={jobDesc} onChange={e => setJobDesc(e.target.value)}
+                    style={{
+                      width: "100%", height: 280, padding: "14px 16px", borderRadius: 2,
+                      fontSize: 13, lineHeight: 1.7, resize: "none",
+                      fontFamily: "'DM Mono', monospace",
+                    }} />
+                </div>
+
+                {/* Analyze & tailor */}
+                <button className="btn-primary" onClick={analyze} disabled={!jobDesc || !resumeText}
+                  style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
+                  Analyze & tailor &rarr;
+                </button>
               </>
             )}
 
