@@ -232,6 +232,38 @@ export default function Tailor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumes]);
 
+  // On load: honor ?mode=generate from the URL and restore any in-progress
+  // company/role/jobDesc saved before the user left to edit their profile.
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("mode") === "generate") {
+      setMode("generate");
+    }
+
+    const draftRaw = sessionStorage.getItem("generate_draft");
+    if (draftRaw) {
+      try {
+        const draft = JSON.parse(draftRaw);
+        if (draft.company) setCompany(draft.company);
+        if (draft.role) setRole(draft.role);
+        if (draft.jobDesc) setJobDesc(draft.jobDesc);
+      } catch {
+        // ignore malformed draft
+      }
+      sessionStorage.removeItem("generate_draft");
+    }
+  }, []);
+
+  // Persist the in-progress Generate inputs, then go edit the profile, asking
+  // the profile page to send the user back here afterward.
+  const handleEditProfile = () => {
+    sessionStorage.setItem(
+      "generate_draft",
+      JSON.stringify({ company, role, jobDesc })
+    );
+    router.push(`/profile?returnTo=${encodeURIComponent("/tailor?mode=generate")}`);
+  };
+
   const saveToVault = async (data: any) => {
     if (!user?.id) return;
     const date = new Date().toLocaleDateString();
@@ -766,7 +798,7 @@ export default function Tailor() {
                   <span style={{ fontSize: 14 }}>⚡</span>
                   <span>Using your saved profile — AI generates a complete ATS resume tailored to this job.</span>
                   <button
-                    onClick={() => router.push("/profile")}
+                    onClick={handleEditProfile}
                     style={{
                       background: "transparent", border: "none", cursor: "pointer", padding: 0,
                       color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",

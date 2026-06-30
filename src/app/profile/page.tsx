@@ -117,6 +117,14 @@ export default function ProfilePage() {
         month: "short", day: "numeric", year: "numeric",
         hour: "numeric", minute: "2-digit",
       }));
+      // If we arrived here mid-flow (e.g. from Generate CV), send the user back
+      // to where they left off. Only allow internal paths (no open redirects).
+      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
+      if (returnTo && returnTo.startsWith("/")) {
+        setSaving(false);
+        router.push(returnTo);
+        return;
+      }
       setTimeout(() => setSaved(false), 5000);
     } else {
       setSaveError("Save failed — try again");
