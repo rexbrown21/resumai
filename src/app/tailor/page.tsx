@@ -758,29 +758,31 @@ export default function Tailor() {
 
             {mode === "generate" ? (
               <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 2 }}>
-                  <div className="card" style={{ padding: "32px" }}>
-                    <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
-                    <input placeholder="Company name" value={company}
-                      onChange={e => setCompany(e.target.value)}
-                      style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
-                    <input placeholder="Role title" value={role}
-                      onChange={e => setRole(e.target.value)}
-                      style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
-                  </div>
-                  <div className="card" style={{ padding: "32px", background: `${COLORS.accent}06`, border: `1px solid ${COLORS.accent}20` }}>
-                    <div className="tag" style={{ marginBottom: 12 }}>Using your profile</div>
-                    <p className="mono" style={{ color: COLORS.textDim, fontSize: 12, lineHeight: 1.7 }}>
-                      AI will read your saved experience profile and generate a complete ATS resume tailored to this job from scratch.
-                    </p>
-                    <button
-                      className="btn-ghost"
-                      onClick={() => router.push("/profile")}
-                      style={{ padding: "8px 16px", borderRadius: 2, fontSize: 12, marginTop: 16 }}
-                    >
-                      Edit profile →
-                    </button>
-                  </div>
+                {/* Lightweight contextual note replacing the standalone "Using your profile" card */}
+                <div className="mono" style={{
+                  display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap",
+                  color: COLORS.textDim, fontSize: 12, padding: "4px 2px",
+                }}>
+                  <span style={{ fontSize: 14 }}>⚡</span>
+                  <span>Using your saved profile — AI generates a complete ATS resume tailored to this job.</span>
+                  <button
+                    onClick={() => router.push("/profile")}
+                    style={{
+                      background: "transparent", border: "none", cursor: "pointer", padding: 0,
+                      color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                    }}
+                  >
+                    Edit profile →
+                  </button>
+                </div>
+                <div className="card" style={{ padding: "32px" }}>
+                  <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
+                  <input placeholder="Company name" value={company}
+                    onChange={e => setCompany(e.target.value)}
+                    style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
+                  <input placeholder="Role title" value={role}
+                    onChange={e => setRole(e.target.value)}
+                    style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
                 </div>
                 <div className="card" style={{ padding: "32px" }}>
                   <div className="tag" style={{ marginBottom: 16 }}>Job description</div>
