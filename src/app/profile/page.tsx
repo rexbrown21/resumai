@@ -66,15 +66,31 @@ export default function ProfilePage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
+  // Captured once on mount so it survives the URL being cleaned up below.
+  const [returnTo, setReturnTo] = useState<string | null>(null);
 
   useEffect(() => {
     if (!user) return;
     loadProfile();
   }, [user?.id]);
 
-  // Track unsaved changes after initial load
+  // Capture where to return after saving (e.g. the Generate CV flow), then
+  // strip the query param so a refresh/revisit doesn't carry stale intent.
   useEffect(() => {
-    if (profileLoaded) setHasUnsaved(true);
+    const param = new URLSearchParams(window.location.search).get("returnTo");
+    if (param && param.startsWith("/")) {
+      setReturnTo(param);
+      router.replace("/profile");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Track unsaved changes after initial load; editing also clears the saved state.
+  useEffect(() => {
+    if (profileLoaded) {
+      setHasUnsaved(true);
+      setSaved(false);
+    }
   }, [profile]);
 
   const loadProfile = async () => {
@@ -111,21 +127,15 @@ export default function ProfilePage() {
       );
 
     if (!error) {
+      // No automatic redirect — show a success state with an explicit button
+      // (see the success banner). The button target depends on whether the user
+      // arrived from the Generate CV flow (returnTo) or the dashboard.
       setSaved(true);
       setHasUnsaved(false);
       setLastSaved(new Date().toLocaleString("en-US", {
         month: "short", day: "numeric", year: "numeric",
         hour: "numeric", minute: "2-digit",
       }));
-      // If we arrived here mid-flow (e.g. from Generate CV), send the user back
-      // to where they left off. Only allow internal paths (no open redirects).
-      const returnTo = new URLSearchParams(window.location.search).get("returnTo");
-      if (returnTo && returnTo.startsWith("/")) {
-        setSaving(false);
-        router.push(returnTo);
-        return;
-      }
-      setTimeout(() => setSaved(false), 5000);
     } else {
       setSaveError("Save failed — try again");
       setTimeout(() => setSaveError(""), 5000);
@@ -250,8 +260,17 @@ export default function ProfilePage() {
           border: `1px solid ${COLORS.success}4d`,
           padding: "16px 24px", borderRadius: 2, marginBottom: 24,
           fontFamily: "'DM Mono', monospace", fontSize: 13, color: COLORS.success,
+          display: "flex", justifyContent: "space-between", alignItems: "center",
+          gap: 16, flexWrap: "wrap",
         }}>
-          ✓ Profile saved successfully — your CV generations will use this updated information
+          <span>✓ Profile saved successfully — your CV generations will use this updated information</span>
+          <button
+            className="btn-primary"
+            onClick={() => router.push(returnTo || "/dashboard")}
+            style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13, whiteSpace: "nowrap" }}
+          >
+            {returnTo ? "Continue generating CV →" : "Back to dashboard →"}
+          </button>
         </div>
       )}
 
