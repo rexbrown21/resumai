@@ -84,6 +84,8 @@ export default function Tailor() {
   const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
   const [showAllResumes, setShowAllResumes] = useState(false);
   const [resumeListExpanded, setResumeListExpanded] = useState(false);
+  // Progressive-disclosure step for Tailor mode only: 1 = resume, 2 = job, 3 = ready.
+  const [tailorStep, setTailorStep] = useState(1);
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
@@ -223,6 +225,9 @@ export default function Tailor() {
     if (match) {
       setMode("tailor");
       selectResume(match);
+      // Resume already chosen — skip straight to the job step if it has content.
+      const hasContent = !!(match.extractedText?.trim() || match.structured_data);
+      if (hasContent) setTailorStep(2);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumes]);
@@ -540,11 +545,24 @@ export default function Tailor() {
     setJobDesc(""); setCompany(""); setRole("");
     setResult(null); setSelectedResume(null); setResumeText("");
     setLoadedResumeName(null); setSelectedHasNoContent(false);
-    setResumeListExpanded(false);
+    setResumeListExpanded(false); setTailorStep(1);
     setSavedToVault(false); setAppLogged(false);
     setUploadedFile(null); setUploadError("");
     setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
   };
+
+  // Advances the Tailor flow to the final step, applying the existing
+  // validation rules (job description length + signal words, resume length).
+  const proceedToReady = () => {
+    const validationError = validateInput();
+    if (validationError) { setError(validationError); return; }
+    setError("");
+    setTailorStep(3);
+  };
+
+  // Label for the collapsed resume summary row across steps.
+  const resumeSummaryLabel =
+    selectedResume?.name || uploadedFile?.name || (resumeText.trim() ? "Pasted resume text" : "");
 
   const generateCoverLetter = async () => {
     setCoverLetterLoading(true);
@@ -782,11 +800,12 @@ export default function Tailor() {
               </div>
             ) : (
               <>
-                {/* Your resume text (upload / paste + select from vault) — first */}
-                <div className="card" style={{ padding: "32px" }}>
+                {/* STEP 1 — Add your resume */}
+                {tailorStep === 1 ? (
+                <div className="card" style={{ padding: "32px", animation: "fadeUp 0.4s ease" }}>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      <div className="tag">Your resume</div>
+                      <div className="tag">Step 1 · Add your resume</div>
                       {loadedResumeName && (
                         <span className="tag" style={{
                           color: COLORS.accent,
@@ -884,116 +903,132 @@ export default function Tailor() {
                         fontFamily: "'DM Mono', monospace",
                       }} />
                   )}
-                </div>
-
-                {/* OR divider + select-from-vault (only when the user has saved resumes) */}
-                {resumes.length > 0 && (
-                  <>
-                    <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "8px 0" }}>
-                      <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-                      <span className="mono" style={{ fontSize: 12, color: COLORS.textMuted, letterSpacing: "0.15em" }}>OR</span>
-                      <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-                    </div>
-
-                    <div className="card" style={{ padding: "32px" }}>
-                      {selectedResume && !resumeListExpanded ? (
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                          <span className="mono" style={{ fontSize: 13, color: COLORS.success }}>
-                            ✓ Using: {selectedResume.name}
-                          </span>
-                          <button
-                            onClick={() => setResumeListExpanded(true)}
-                            style={{
-                              background: "transparent", border: "none", cursor: "pointer",
-                              color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace", padding: 0,
-                            }}
-                          >
-                            change
-                          </button>
-                        </div>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => setResumeListExpanded(v => !v)}
-                            style={{
-                              width: "100%", display: "flex", justifyContent: "space-between", alignItems: "center",
-                              background: "transparent", border: "none", cursor: "pointer", padding: 0,
-                              color: COLORS.text, fontSize: 14, fontWeight: 600, fontFamily: "'Syne', sans-serif",
-                            }}
-                          >
-                            <span>Choose from your saved resumes ({resumes.length})</span>
-                            <span style={{
-                              color: COLORS.textDim, fontSize: 12, lineHeight: 1,
-                              transform: resumeListExpanded ? "rotate(180deg)" : "rotate(0deg)",
-                              transition: "transform 0.2s",
-                            }}>▾</span>
-                          </button>
-
-                          {resumeListExpanded && (
-                            <>
-                              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 16 }}>
-                                {(showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
-                                  <div key={r.id} onClick={() => { selectResume(r); setResumeListExpanded(false); }} style={{
-                                    padding: "14px 18px",
-                                    border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
-                                    background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
-                                    cursor: "pointer", transition: "all 0.2s",
-                                    display: "flex", justifyContent: "space-between", alignItems: "center",
-                                  }}>
-                                    <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
-                                    <span className="tag">{r.type}</span>
-                                  </div>
-                                ))}
-                              </div>
-                              {resumes.length > 6 && (
-                                <button
-                                  onClick={() => setShowAllResumes(v => !v)}
-                                  style={{
-                                    background: "transparent", border: "none", cursor: "pointer",
-                                    color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
-                                    marginTop: 12, padding: 0, alignSelf: "flex-start",
-                                  }}
-                                >
-                                  {showAllResumes ? "Show less" : `View all (${resumes.length})`}
-                                </button>
-                              )}
-                            </>
+                  {/* OR — choose a saved resume (folded into Step 1) */}
+                  {resumes.length > 0 && (
+                    <>
+                      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 0" }}>
+                        <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                        <span className="mono" style={{ fontSize: 12, color: COLORS.textMuted, letterSpacing: "0.15em" }}>OR</span>
+                        <div style={{ flex: 1, height: 1, background: COLORS.border }} />
+                      </div>
+                      <button
+                        className="btn-ghost"
+                        onClick={() => setResumeListExpanded(v => !v)}
+                        style={{ width: "100%", padding: "12px", borderRadius: 2, fontSize: 13 }}
+                      >
+                        {resumeListExpanded ? "Hide saved resumes" : `Choose a saved resume (${resumes.length})`}
+                      </button>
+                      {resumeListExpanded && (
+                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, animation: "fadeIn 0.3s ease" }}>
+                          {(showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
+                            <div key={r.id} onClick={() => { selectResume(r); setResumeListExpanded(false); }} style={{
+                              padding: "14px 18px",
+                              border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
+                              background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
+                              cursor: "pointer", transition: "all 0.2s",
+                              display: "flex", justifyContent: "space-between", alignItems: "center",
+                            }}>
+                              <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
+                              <span className="tag">{r.type}</span>
+                            </div>
+                          ))}
+                          {resumes.length > 6 && (
+                            <button
+                              onClick={() => setShowAllResumes(v => !v)}
+                              style={{
+                                background: "transparent", border: "none", cursor: "pointer",
+                                color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                                marginTop: 4, padding: 0, alignSelf: "flex-start",
+                              }}
+                            >
+                              {showAllResumes ? "Show less" : `View all (${resumes.length})`}
+                            </button>
                           )}
-                        </>
+                        </div>
                       )}
+                    </>
+                  )}
+
+                  <button
+                    className="btn-primary"
+                    onClick={() => { setError(""); setTailorStep(2); }}
+                    disabled={!resumeText.trim()}
+                    style={{ width: "100%", padding: "16px", borderRadius: 2, fontSize: 14, marginTop: 20 }}
+                  >
+                    Continue →
+                  </button>
+                </div>
+                ) : (
+                  <div className="card" style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", animation: "fadeIn 0.3s ease" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 18 }}>📄</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{resumeSummaryLabel}</span>
+                      <span className="mono" style={{ fontSize: 12, color: COLORS.success }}>✓ Loaded</span>
                     </div>
-                  </>
+                    <button className="btn-ghost" onClick={() => setTailorStep(1)} style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
+                      Change
+                    </button>
+                  </div>
                 )}
 
-                {/* Job details */}
-                <div className="card" style={{ padding: "32px" }}>
-                  <div className="tag" style={{ marginBottom: 16 }}>Job details</div>
-                  <input placeholder="Company name" value={company}
-                    onChange={e => setCompany(e.target.value)}
-                    style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
-                  <input placeholder="Role title" value={role}
-                    onChange={e => setRole(e.target.value)}
-                    style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14 }} />
-                </div>
+                {/* STEP 2 — Add the job */}
+                {tailorStep >= 2 && (tailorStep === 2 ? (
+                  <div className="card" style={{ padding: "32px", animation: "fadeUp 0.4s ease" }}>
+                    <div className="tag" style={{ marginBottom: 16 }}>Step 2 · Add the job</div>
+                    <input placeholder="Company name" value={company}
+                      onChange={e => setCompany(e.target.value)}
+                      style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
+                    <input placeholder="Role title" value={role}
+                      onChange={e => setRole(e.target.value)}
+                      style={{ width: "100%", padding: "12px 16px", borderRadius: 2, fontSize: 14, marginBottom: 10 }} />
+                    <textarea
+                      placeholder="Paste the full job description here..."
+                      value={jobDesc} onChange={e => setJobDesc(e.target.value)}
+                      style={{
+                        width: "100%", height: 240, padding: "14px 16px", borderRadius: 2,
+                        fontSize: 13, lineHeight: 1.7, resize: "none",
+                        fontFamily: "'DM Mono', monospace",
+                      }} />
+                    <button
+                      className="btn-primary"
+                      onClick={proceedToReady}
+                      disabled={!company.trim() || !role.trim() || !jobDesc.trim()}
+                      style={{ width: "100%", padding: "16px", borderRadius: 2, fontSize: 14, marginTop: 16 }}
+                    >
+                      Continue →
+                    </button>
+                  </div>
+                ) : (
+                  <div className="card" style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", animation: "fadeIn 0.3s ease" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
+                      <span style={{ fontSize: 18 }}>💼</span>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{company} — {role}</span>
+                      <span className="mono" style={{ fontSize: 12, color: COLORS.success }}>✓</span>
+                    </div>
+                    <button className="btn-ghost" onClick={() => setTailorStep(2)} style={{ padding: "6px 16px", borderRadius: 2, fontSize: 12 }}>
+                      Change
+                    </button>
+                  </div>
+                ))}
 
-                {/* Job description */}
-                <div className="card" style={{ padding: "32px" }}>
-                  <div className="tag" style={{ marginBottom: 16 }}>Job description</div>
-                  <textarea
-                    placeholder="Paste the full job description here..."
-                    value={jobDesc} onChange={e => setJobDesc(e.target.value)}
-                    style={{
-                      width: "100%", height: 280, padding: "14px 16px", borderRadius: 2,
-                      fontSize: 13, lineHeight: 1.7, resize: "none",
-                      fontFamily: "'DM Mono', monospace",
-                    }} />
-                </div>
-
-                {/* Analyze & tailor */}
-                <button className="btn-primary" onClick={analyze} disabled={!jobDesc || !resumeText}
-                  style={{ padding: "20px", borderRadius: 2, fontSize: 15 }}>
-                  Analyze & tailor &rarr;
-                </button>
+                {/* STEP 3 — Ready to tailor */}
+                {tailorStep >= 3 && (
+                  <div className="card" style={{ padding: "32px", animation: "fadeUp 0.4s ease" }}>
+                    <div className="tag" style={{ marginBottom: 16 }}>Step 3 · Ready to tailor</div>
+                    <div className="mono" style={{ fontSize: 13, color: COLORS.textDim, lineHeight: 1.9, marginBottom: 24 }}>
+                      <div><span style={{ color: COLORS.textMuted }}>Resume:</span> {resumeSummaryLabel}</div>
+                      <div><span style={{ color: COLORS.textMuted }}>Tailoring for:</span> {company} — {role}</div>
+                    </div>
+                    <button
+                      className="btn-primary"
+                      onClick={analyze}
+                      disabled={!jobDesc || !resumeText}
+                      style={{ width: "100%", padding: "20px", borderRadius: 2, fontSize: 15 }}
+                    >
+                      Tailor my resume →
+                    </button>
+                  </div>
+                )}
               </>
             )}
 
