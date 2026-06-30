@@ -66,8 +66,9 @@ export default function ProfilePage() {
   const [profileLoaded, setProfileLoaded] = useState(false);
   const [loading, setLoading] = useState(true);
   const [confirmClear, setConfirmClear] = useState(false);
-  // Captured once on mount so it survives the URL being cleaned up below.
+  // Captured once on mount so they survive the URL/sessionStorage changing later.
   const [returnTo, setReturnTo] = useState<string | null>(null);
+  const [hasGenerateProgress, setHasGenerateProgress] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -81,6 +82,20 @@ export default function ProfilePage() {
     if (param && param.startsWith("/")) {
       setReturnTo(param);
       router.replace("/profile");
+    }
+
+    // Does the Generate CV flow have any actual in-progress input? Drives the
+    // "Continue generating" vs "Generate a CV" wording after save.
+    try {
+      const draftRaw = sessionStorage.getItem("generate_draft");
+      if (draftRaw) {
+        const draft = JSON.parse(draftRaw);
+        setHasGenerateProgress(!!(
+          draft?.company?.trim() || draft?.role?.trim() || draft?.jobDesc?.trim()
+        ));
+      }
+    } catch {
+      // ignore malformed draft
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -269,7 +284,9 @@ export default function ProfilePage() {
             onClick={() => router.push(returnTo || "/dashboard")}
             style={{ padding: "10px 20px", borderRadius: 2, fontSize: 13, whiteSpace: "nowrap" }}
           >
-            {returnTo ? "Continue generating CV →" : "Back to dashboard →"}
+            {returnTo
+              ? (hasGenerateProgress ? "Continue generating CV →" : "Generate a CV →")
+              : "Back to dashboard →"}
           </button>
         </div>
       )}
