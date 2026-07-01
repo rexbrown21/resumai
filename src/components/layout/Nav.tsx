@@ -44,11 +44,7 @@ export default function Nav() {
         <Link href={user ? "/dashboard" : "/"} style={{
           display: "flex", alignItems: "center", gap: 8, textDecoration: "none",
         }}>
-          <div style={{
-            width: 28, height: 28,
-            background: "var(--accent)",
-            clipPath: "polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%)",
-          }} />
+          <img src="/logo.svg" width="28" height="28" alt="RezumeAI" style={{ marginRight: '8px' }} />
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: "var(--text)" }}>
             REZUMEAI
           </span>

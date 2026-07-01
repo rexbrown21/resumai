@@ -767,7 +767,7 @@ export default function Tailor() {
                 transition: "all 0.2s",
               }}
             >
-              ✦ Tailor existing resume
+              <img src="/tailor.svg" width="20" height="20" alt="" style={{ marginRight: '6px' }} />Tailor existing resume
             </button>
             <button
               onClick={() => { setMode("generate"); setError(""); setProfileMissing(false); }}
@@ -780,7 +780,7 @@ export default function Tailor() {
                 transition: "all 0.2s",
               }}
             >
-              ⚡ Generate from profile
+              <img src="/generate.svg" width="20" height="20" alt="" style={{ marginRight: '6px' }} />Generate from profile
             </button>
           </div>
         )}
