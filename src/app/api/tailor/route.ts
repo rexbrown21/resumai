@@ -95,8 +95,14 @@ RULES:
 1. Analyze the job description and identify key requirements, skills, and keywords
 2. Rewrite the resume to highlight relevant experience using keywords from the job description
 3. Keep the candidate's authentic voice — only use experiences they actually have
-4. Do NOT invent experience or skills the candidate does not have
-5. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation
+4. Do NOT invent work experience the candidate does not have — for the skills section specifically, follow the SKILLS RULE below
+5. SKILLS RULE: The skills section must reflect both the candidate's actual skills from their resume AND skills explicitly required by the job description that are plausibly held given their background. Organize into 3-5 relevant categories. Never invent skills with no basis in the resume or JD.
+   - BASE: Always keep the skills already present in the candidate's resume — these are confirmed.
+   - SUPPLEMENT: Scan the JD's requirements and responsibilities for technical tools, frameworks, methodologies, and domain keywords, and include those that someone with this candidate's background would plausibly hold, even if not explicitly in their resume.
+   - INCLUSION TEST: Only include a skill if EITHER it appears in the candidate's resume OR it appears explicitly in the JD AND is plausible given their background. Never fabricate skills with no basis in either.
+   - For TECHNICAL roles (jobType === "Technical"), ensure categories such as Programming Languages, Frameworks & Libraries, Tools & Platforms, and Cloud & Infrastructure or AI/ML & Automation where relevant — inferred from both the JD and the resume.
+   - For NON-TECHNICAL roles (Managerial, Consulting, General, Research), ensure categories such as role core competencies (e.g. Project Management, Stakeholder Engagement, Data Analysis), domain-specific tools the JD names (e.g. Excel, Salesforce, Tableau), and soft skills ONLY where the JD requirements explicitly list them — never generic filler like "teamwork" unless the JD names it.
+6. Respond ONLY with a valid JSON object — no markdown, no backticks, no explanation
 
 Respond in this exact JSON format:
 {

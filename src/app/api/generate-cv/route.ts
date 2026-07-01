@@ -110,9 +110,16 @@ CORE RULES:
 8. NEVER use weak phrases like "responsible for", "helped with", "worked on"
 9. Keep bullets to ONE line maximum — tight, punchy, impactful
 10. Summary must be 2 sentences maximum — tailored to the exact role
-11. Skills section must have at least 6 categories with 3-5 items each. Use keywords directly from the job description AND enrich with adjacent skills implied by the JD. If the candidate knows Python and the JD mentions FastAPI, add FastAPI. Only add skills realistic given their background — never add completely unrelated skills.
+11. Skills section must be organized into 3-5 relevant categories with 3-5 items each (see SKILLS RULE below). Start from the candidate's actual profile skills, then supplement with tools, frameworks, and methodologies stated in the JD that are plausible given their background. If the candidate knows Python and the JD mentions FastAPI, add FastAPI. Never add unrelated skills with no basis in the profile or JD.
 12. Use perfect American English spelling and grammar throughout. Capitalize proper nouns only. Use consistent punctuation — no periods at end of bullets. Never use passive voice.
 13. The goal is a FULL, DENSE, content-rich resume — include everything. The PDF formatter will handle the one-page layout constraint.
+
+SKILLS RULE: The skills section must reflect both the candidate's actual skills from their profile AND skills explicitly required by the job description that are plausibly held given their background. Organize into 3-5 relevant categories. Never invent skills with no basis in the profile or JD.
+- BASE: Always include every skill the candidate listed in their profile — these are confirmed skills they actually have.
+- SUPPLEMENT: Scan the JD's requirements and responsibilities for technical tools, frameworks, methodologies, and domain keywords. Include those that someone with the candidate's background would plausibly hold, even if not explicitly listed in their profile.
+- INCLUSION TEST: Only include a skill if EITHER the candidate listed it in their profile OR it appears explicitly in the JD AND is plausible given their background. Never fabricate skills that have no basis in either the profile or the JD.
+- For TECHNICAL roles (jobType === "Technical"), always ensure relevant categories such as: Programming Languages, Frameworks & Libraries, Tools & Platforms, Cloud & Infrastructure (if relevant to the role), and AI/ML or Automation (if relevant to the role) — each inferred from both the JD and the profile.
+- For NON-TECHNICAL roles (Managerial, Consulting, General, Research), ensure categories such as: Core competencies relevant to the role (e.g. Project Management, Stakeholder Engagement, Data Analysis), Domain-specific tools the JD mentions (e.g. Excel, Salesforce, Tableau), and soft skills ONLY where the JD requirements explicitly list them — never generic filler like "teamwork" unless the JD specifically names it.
 
 STRICT VERB RULES:
 1. Before writing any bullet, maintain a running list of every action verb already used in the resume.
