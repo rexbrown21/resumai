@@ -252,6 +252,22 @@ export default function Tailor() {
       }
       sessionStorage.removeItem("generate_draft");
     }
+
+    // Arriving from the audit page — carry the audited resume + company across
+    // so the user lands straight on the job step with their resume already in.
+    const auditText = sessionStorage.getItem("audit_resume_text");
+    const auditCompany = sessionStorage.getItem("audit_company");
+    if (auditText) {
+      setMode("tailor");
+      setResumeText(auditText);
+      setResumeInputMode("paste");
+      setTailorStep(2);
+      sessionStorage.removeItem("audit_resume_text");
+    }
+    if (auditCompany !== null) {
+      if (auditCompany) setCompany(auditCompany);
+      sessionStorage.removeItem("audit_company");
+    }
   }, []);
 
   // Persist the in-progress Generate inputs, then go edit the profile, asking

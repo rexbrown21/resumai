@@ -27,6 +27,7 @@ export default function Nav() {
   const navLinks = [
     { href: "/dashboard", label: "Dashboard", tour: undefined as string | undefined },
     { href: "/resumes", label: "Resumes", tour: "resumes-link" },
+    { href: "/audit", label: "Audit", tour: "audit-link" },
     { href: "/tailor", label: "Tailor", tour: "tailor-link" },
     { href: "/tracker", label: "Tracker", tour: "tracker-link" },
   ];
