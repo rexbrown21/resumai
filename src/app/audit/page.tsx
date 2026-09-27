@@ -183,8 +183,11 @@ export default function Audit() {
       ]
         .filter(Boolean)
         .join("  |  ");
-      doc.text(meta, margin, y);
-      y += 6;
+      doc.splitTextToSize(meta, maxWidth).forEach((line: string) => {
+        doc.text(line, margin, y);
+        y += 5;
+      });
+      y += 1;
 
       doc.setDrawColor(...ACCENT);
       doc.line(margin, y, pageWidth - margin, y);

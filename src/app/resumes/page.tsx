@@ -91,18 +91,39 @@ export default function Resumes() {
     import("jspdf").then(({ jsPDF }) => {
       const doc = new jsPDF({ format: "a4", unit: "mm" });
       const pageWidth = doc.internal.pageSize.getWidth();
+      // 12mm left + 12mm right on A4 => 186mm of usable text width.
       const margin = 12;
       const maxWidth = pageWidth - margin * 2;
+      // Bullets are indented 2mm, so they wrap 2mm narrower to stay inside it.
+      const bulletIndent = 2;
+      const bulletWidth = maxWidth - bulletIndent;
       let y = 14;
 
       const lh = 4.5;
       const secGap = 5;
       const bGap = 4.5;
 
+      // Every string goes through here so long titles and school names wrap
+      // instead of being clipped at the page edge. Set the font before calling —
+      // splitTextToSize measures against the current font.
+      const writeBlock = (
+        text: string,
+        lineHeight: number,
+        x: number = margin,
+        width: number = maxWidth
+      ) => {
+        const lines: string[] = doc.splitTextToSize(String(text ?? ""), width);
+        lines.forEach((l: string) => { doc.text(l, x, y); y += lineHeight; });
+      };
+
       const addSection = (title: string) => {
         y += secGap;
         doc.setFontSize(9.5); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
-        doc.text(title.toUpperCase(), margin, y);
+        const lines: string[] = doc.splitTextToSize(title.toUpperCase(), maxWidth);
+        lines.forEach((l: string, i: number) => {
+          doc.text(l, margin, y);
+          if (i < lines.length - 1) y += 4;
+        });
         y += 2.5;
         doc.setDrawColor(0, 0, 0);
         doc.line(margin, y, pageWidth - margin, y);
@@ -110,26 +131,26 @@ export default function Resumes() {
       };
 
       doc.setFontSize(15); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
-      doc.text(s.name, margin, y); y += 5.5;
+      writeBlock(s.name, 5.5);
       doc.setFontSize(8.5); doc.setFont("helvetica", "normal"); doc.setTextColor(60, 60, 60);
-      doc.splitTextToSize(s.contact, maxWidth).forEach((l: string) => { doc.text(l, margin, y); y += lh; });
+      writeBlock(s.contact, lh);
       y += 2;
       doc.setDrawColor(0, 0, 0); doc.line(margin, y, pageWidth - margin, y); y += 5;
 
       addSection("Professional Summary");
       doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
-      doc.splitTextToSize(s.summary, maxWidth).forEach((l: string) => { doc.text(l, margin, y); y += lh; });
+      writeBlock(s.summary, lh);
 
       if (s.experience?.length > 0) {
         addSection("Work Experience");
         s.experience.forEach((exp, idx) => {
           doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
-          doc.text(`${exp.title} — ${exp.company}`, margin, y); y += 4;
+          writeBlock(`${exp.title} — ${exp.company}`, 4);
           doc.setFontSize(8.5); doc.setFont("helvetica", "italic"); doc.setTextColor(90, 90, 90);
-          doc.text(`${exp.location} | ${exp.period}`, margin, y); y += 4;
+          writeBlock(`${exp.location} | ${exp.period}`, 4);
           exp.bullets?.forEach((b: string) => {
             doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
-            doc.splitTextToSize(`\u2022 ${b}`, maxWidth - 4).forEach((l: string) => { doc.text(l, margin + 2, y); y += bGap; });
+            writeBlock(`\u2022 ${b}`, bGap, margin + bulletIndent, bulletWidth);
           });
           if (idx < s.experience.length - 1) y += 3;
         });
@@ -139,10 +160,10 @@ export default function Resumes() {
         addSection("Projects");
         s.projects.forEach((proj, idx) => {
           doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
-          doc.text(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, margin, y); y += 4;
+          writeBlock(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, 4);
           proj.bullets?.forEach((b: string) => {
             doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
-            doc.splitTextToSize(`\u2022 ${b}`, maxWidth - 4).forEach((l: string) => { doc.text(l, margin + 2, y); y += bGap; });
+            writeBlock(`\u2022 ${b}`, bGap, margin + bulletIndent, bulletWidth);
           });
           if (idx < s.projects.length - 1) y += 3;
         });
@@ -152,11 +173,11 @@ export default function Resumes() {
         addSection("Education");
         s.education.forEach((edu) => {
           doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 0);
-          doc.text(edu.school, margin, y); y += 4;
+          writeBlock(edu.school, 4);
           doc.setFontSize(9); doc.setFont("helvetica", "normal"); doc.setTextColor(0, 0, 0);
-          doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y); y += lh;
+          writeBlock(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, lh);
           doc.setFontSize(8.5); doc.setTextColor(90, 90, 90);
-          doc.text(`${edu.location} | ${edu.period}`, margin, y); y += 4;
+          writeBlock(`${edu.location} | ${edu.period}`, 4);
         });
       }
 
@@ -164,8 +185,11 @@ export default function Resumes() {
         addSection("Skills");
         Object.entries(s.skills).forEach(([cat, val]) => {
           doc.setFontSize(9); doc.setTextColor(0, 0, 0);
-          doc.splitTextToSize(`${cat}: ${val}`, maxWidth).forEach((l: string, i: number) => {
-            if (i === 0) doc.setFont("helvetica", "bold"); else doc.setFont("helvetica", "normal");
+          // Bold the category label on the first line only.
+          doc.setFont("helvetica", "bold");
+          const lines: string[] = doc.splitTextToSize(`${cat}: ${val}`, maxWidth);
+          lines.forEach((l: string, i: number) => {
+            if (i === 1) doc.setFont("helvetica", "normal");
             doc.text(l, margin, y); y += lh;
           });
         });

@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     console.log("Profile data:", JSON.stringify(profile, null, 2));
 
     const completion = await createCompletionWithRetry({
-      model: "openai/gpt-oss-20b",
+      model: "openai/gpt-oss-120b",
       messages: [
         {
           role: "system",

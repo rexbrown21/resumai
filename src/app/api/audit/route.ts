@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     let parsed: any = null;
     try {
       const completion = await createCompletionWithRetry({
-        model: "openai/gpt-oss-20b",
+        model: "openai/gpt-oss-120b",
         messages: [
           {
             role: "system",

@@ -301,8 +301,13 @@ export default function Tailor() {
 
       const renderContent = (doc: any, multiplier: number): number => {
         const pageWidth = doc.internal.pageSize.getWidth();
+        // 12mm left + 12mm right on A4 => 186mm of usable text width.
         const margin = 12;
         const maxWidth = pageWidth - margin * 2;
+        // Bullets sit 2mm in, so their wrap width shrinks by the same amount —
+        // otherwise a wrapped bullet line runs 2mm past the right margin.
+        const bulletIndent = 2;
+        const bulletWidth = maxWidth - bulletIndent;
         let y = 14;
 
         // Base spacing constants — multiplied by scale factor
@@ -312,12 +317,33 @@ export default function Tailor() {
         const bGap = 4.0 * multiplier;
         const rGap = 3.0 * multiplier;
 
+        // Every string drawn into the PDF goes through here. splitTextToSize
+        // measures against the CURRENT font, so callers must set font + size
+        // before calling. Drawing with a bare doc.text() is what used to clip
+        // long job titles and school names at the page edge.
+        const writeBlock = (
+          text: string,
+          lineHeight: number,
+          x: number = margin,
+          width: number = maxWidth
+        ) => {
+          const lines: string[] = doc.splitTextToSize(String(text ?? ""), width);
+          lines.forEach((line: string) => {
+            doc.text(line, x, y);
+            y += lineHeight;
+          });
+        };
+
         const addSectionHeader = (title: string) => {
           y += secGap;
           doc.setFontSize(9.5);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(0, 0, 0);
-          doc.text(title.toUpperCase(), margin, y);
+          const lines: string[] = doc.splitTextToSize(title.toUpperCase(), maxWidth);
+          lines.forEach((line: string, i: number) => {
+            doc.text(line, margin, y);
+            if (i < lines.length - 1) y += 4 * multiplier;
+          });
           y += 2.5;
           doc.setDrawColor(0, 0, 0);
           doc.line(margin, y, pageWidth - margin, y);
@@ -328,17 +354,12 @@ export default function Tailor() {
           doc.setFontSize(15);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(0, 0, 0);
-          doc.text(s.name, margin, y);
-          y += 5.5 * multiplier;
+          writeBlock(s.name, 5.5 * multiplier);
 
           doc.setFontSize(8.5);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(60, 60, 60);
-          const contactLines = doc.splitTextToSize(s.contact, maxWidth);
-          contactLines.forEach((line: string) => {
-            doc.text(line, margin, y);
-            y += lhSm;
-          });
+          writeBlock(s.contact, lhSm);
           y += 1.5 * multiplier;
 
           doc.setDrawColor(0, 0, 0);
@@ -349,11 +370,7 @@ export default function Tailor() {
           doc.setFontSize(9);
           doc.setFont("helvetica", "normal");
           doc.setTextColor(0, 0, 0);
-          const summaryLines = doc.splitTextToSize(s.summary, maxWidth);
-          summaryLines.forEach((line: string) => {
-            doc.text(line, margin, y);
-            y += lhBody;
-          });
+          writeBlock(s.summary, lhBody);
 
           if (s.experience?.length > 0) {
             addSectionHeader("Work Experience");
@@ -361,24 +378,18 @@ export default function Tailor() {
               doc.setFontSize(10);
               doc.setFont("helvetica", "bold");
               doc.setTextColor(0, 0, 0);
-              doc.text(`${exp.title} — ${exp.company}`, margin, y);
-              y += 4 * multiplier;
+              writeBlock(`${exp.title} — ${exp.company}`, 4 * multiplier);
 
               doc.setFontSize(8.5);
               doc.setFont("helvetica", "italic");
               doc.setTextColor(90, 90, 90);
-              doc.text(`${exp.location} | ${exp.period}`, margin, y);
-              y += 4 * multiplier;
+              writeBlock(`${exp.location} | ${exp.period}`, 4 * multiplier);
 
               exp.bullets?.forEach((bullet: string) => {
                 doc.setFontSize(9);
                 doc.setFont("helvetica", "normal");
                 doc.setTextColor(0, 0, 0);
-                const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
-                lines.forEach((line: string) => {
-                  doc.text(line, margin + 2, y);
-                  y += bGap;
-                });
+                writeBlock(`• ${bullet}`, bGap, margin + bulletIndent, bulletWidth);
               });
 
               if (idx < s.experience.length - 1) y += rGap;
@@ -391,18 +402,13 @@ export default function Tailor() {
               doc.setFontSize(10);
               doc.setFont("helvetica", "bold");
               doc.setTextColor(0, 0, 0);
-              doc.text(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, margin, y);
-              y += 4 * multiplier;
+              writeBlock(`${proj.name}${proj.period ? ` (${proj.period})` : ""}`, 4 * multiplier);
 
               proj.bullets?.forEach((bullet: string) => {
                 doc.setFontSize(9);
                 doc.setFont("helvetica", "normal");
                 doc.setTextColor(0, 0, 0);
-                const lines = doc.splitTextToSize(`• ${bullet}`, maxWidth - 4);
-                lines.forEach((line: string) => {
-                  doc.text(line, margin + 2, y);
-                  y += bGap;
-                });
+                writeBlock(`• ${bullet}`, bGap, margin + bulletIndent, bulletWidth);
               });
 
               if (idx < s.projects.length - 1) y += rGap;
@@ -415,19 +421,16 @@ export default function Tailor() {
               doc.setFontSize(10);
               doc.setFont("helvetica", "bold");
               doc.setTextColor(0, 0, 0);
-              doc.text(edu.school, margin, y);
-              y += 4 * multiplier;
+              writeBlock(edu.school, 4 * multiplier);
 
               doc.setFontSize(9);
               doc.setFont("helvetica", "normal");
               doc.setTextColor(0, 0, 0);
-              doc.text(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, margin, y);
-              y += lhSm;
+              writeBlock(`${edu.degree}${edu.gpa ? ` | GPA: ${edu.gpa}` : ""}`, lhSm);
 
               doc.setFontSize(8.5);
               doc.setTextColor(90, 90, 90);
-              doc.text(`${edu.location} | ${edu.period}`, margin, y);
-              y += 4 * multiplier;
+              writeBlock(`${edu.location} | ${edu.period}`, 4 * multiplier);
             });
           }
 
@@ -436,11 +439,11 @@ export default function Tailor() {
             Object.entries(s.skills).forEach(([category, value]) => {
               doc.setFontSize(9);
               doc.setTextColor(0, 0, 0);
-              const skillLine = `${category}: ${value}`;
-              const lines = doc.splitTextToSize(skillLine, maxWidth);
+              // Bold only the first line so the category label stands out.
+              doc.setFont("helvetica", "bold");
+              const lines: string[] = doc.splitTextToSize(`${category}: ${value}`, maxWidth);
               lines.forEach((line: string, i: number) => {
-                if (i === 0) doc.setFont("helvetica", "bold");
-                else doc.setFont("helvetica", "normal");
+                if (i === 1) doc.setFont("helvetica", "normal");
                 doc.text(line, margin, y);
                 y += lhBody;
               });
@@ -450,15 +453,11 @@ export default function Tailor() {
           doc.setFontSize(14);
           doc.setFont("helvetica", "bold");
           doc.setTextColor(0, 0, 0);
-          doc.text(selectedResume?.name || "Tailored Resume", margin, y);
-          y += 8 * multiplier;
+          writeBlock(selectedResume?.name || "Tailored Resume", 8 * multiplier);
+
           doc.setFontSize(9);
           doc.setFont("helvetica", "normal");
-          const lines = doc.splitTextToSize(result.tailoredResume || "", maxWidth);
-          lines.forEach((line: string) => {
-            doc.text(line, margin, y);
-            y += lhBody;
-          });
+          writeBlock(result.tailoredResume || "", lhBody);
         }
 
         return y;
@@ -581,22 +580,28 @@ export default function Tailor() {
         : coverLetter.split(/\n\n+/);
       const signature: string = coverLetterData.signature || name;
 
+      // Wraps every block to the 12mm/12mm text column. The font must already
+      // be set — splitTextToSize measures against whatever is current.
+      const writeBlock = (text: string, lineHeight: number) => {
+        const lines: string[] = doc.splitTextToSize(String(text ?? ""), maxWidth);
+        lines.forEach((line: string) => {
+          doc.text(line, margin, y);
+          y += lineHeight;
+        });
+      };
+
       // Header — name
       doc.setFontSize(15);
       doc.setFont("helvetica", "bold");
       doc.setTextColor(0, 0, 0);
-      doc.text(name, margin, y);
-      y += 6;
+      writeBlock(name, 6);
 
       // Contact line
       if (contact) {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(60, 60, 60);
-        doc.splitTextToSize(contact, maxWidth).forEach((line: string) => {
-          doc.text(line, margin, y);
-          y += 4.5;
-        });
+        writeBlock(contact, 4.5);
       }
 
       // Location line
@@ -604,8 +609,7 @@ export default function Tailor() {
         doc.setFontSize(9);
         doc.setFont("helvetica", "normal");
         doc.setTextColor(60, 60, 60);
-        doc.text(location, margin, y);
-        y += 4.5;
+        writeBlock(location, 4.5);
       }
 
       // Divider under header
@@ -618,18 +622,15 @@ export default function Tailor() {
       doc.setFontSize(9.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      doc.text(date, margin, y);
-      y += 9;
+      writeBlock(date, 9);
 
       // Recipient / company block
       doc.setFontSize(10);
       doc.setFont("helvetica", "bold");
-      doc.text(recipient, margin, y);
-      y += 5;
+      writeBlock(recipient, 5);
       if (companyName) {
         doc.setFont("helvetica", "normal");
-        doc.text(companyName, margin, y);
-        y += 5;
+        writeBlock(companyName, 5);
       }
       y += 4;
 
@@ -637,25 +638,19 @@ export default function Tailor() {
       doc.setFontSize(10.5);
       doc.setFont("helvetica", "normal");
       doc.setTextColor(0, 0, 0);
-      doc.text(salutation, margin, y);
-      y += 8;
+      writeBlock(salutation, 8);
 
       // Body paragraphs
       paragraphs.forEach((para: string) => {
-        const paraLines = doc.splitTextToSize(para.trim(), maxWidth);
-        paraLines.forEach((line: string) => {
-          doc.text(line, margin, y);
-          y += 5.5;
-        });
+        writeBlock(para.trim(), 5.5);
         y += 3.5;
       });
 
       // Signature
       y += 2;
-      doc.text("Sincerely,", margin, y);
-      y += 7;
+      writeBlock("Sincerely,", 7);
       doc.setFont("helvetica", "bold");
-      doc.text(signature, margin, y);
+      writeBlock(signature, 5);
 
       const fileName = ((companyName || "cover-letter") + "-" + (role || "application")).replace(/\s+/g, "-").toLowerCase();
       doc.save(fileName + "-cover-letter.pdf");
