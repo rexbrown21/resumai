@@ -141,7 +141,7 @@ export async function POST(req: NextRequest) {
     let parsed: any = null;
     try {
       const completion = await createCompletionWithRetry({
-        model: "llama-3.3-70b-versatile",
+        model: "moonshotai/kimi-k2-instruct",
         messages: [
           {
             role: "system",

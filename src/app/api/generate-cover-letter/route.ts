@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
     });
 
     const completion = await groq.chat.completions.create({
-      model: "llama-3.3-70b-versatile",
+      model: "moonshotai/kimi-k2-instruct",
       messages: [
         {
           role: "system",

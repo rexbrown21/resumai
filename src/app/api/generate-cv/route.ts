@@ -93,7 +93,7 @@ export async function POST(req: NextRequest) {
     console.log("Profile data:", JSON.stringify(profile, null, 2));
 
     const completion = await createCompletionWithRetry({
-      model: "llama-3.3-70b-versatile",
+      model: "moonshotai/kimi-k2-instruct",
       messages: [
         {
           role: "system",
