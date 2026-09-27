@@ -85,7 +85,7 @@ export async function POST(req: NextRequest) {
     }
 
     const completion = await createCompletionWithRetry({
-      model: "moonshotai/kimi-k2-instruct",
+      model: "openai/gpt-oss-20b",
       messages: [
         {
           role: "system",
