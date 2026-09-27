@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
@@ -169,12 +170,21 @@ ${resumeText}`,
         },
       ],
       temperature: 0.7,
-      max_tokens: 4096,
+      // Kept low deliberately: the tailored JSON fits well under this, and a
+      // smaller ceiling reduces the chance of running into Groq's per-minute
+      // token limit mid-response.
+      max_tokens: 2000,
     });
 
-    const text = completion.choices[0].message.content || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    const result = usableResumePayload(
+      parseModelJson(completion.choices[0].message.content || "")
+    );
+    if (!result) {
+      return NextResponse.json(
+        { error: "Failed to tailor resume — please try again" },
+        { status: 500 }
+      );
+    }
 
     if (resumeId) {
       const { data: resume } = await supabaseAdmin
@@ -188,7 +198,7 @@ ${resumeText}`,
         .eq("id", resumeId);
     }
 
-    return NextResponse.json(parsed);
+    return NextResponse.json(result);
   } catch (error) {
     const isRateLimit =
       error instanceof Error &&

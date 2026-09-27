@@ -1,6 +1,7 @@
 import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
+import { parseModelJson } from "@/lib/parseModelJson";
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -120,12 +121,20 @@ ${experienceSummary}`,
         },
       ],
       temperature: 0.75,
-      max_tokens: 1024,
+      // Four paragraphs of 250-320 words fit comfortably here, and the lower
+      // ceiling reduces exposure to Groq's per-minute token limit.
+      max_tokens: 800,
     });
 
-    const text = completion.choices[0].message.content || "";
-    const clean = text.replace(/```json|```/g, "").trim();
-    const parsed = JSON.parse(clean);
+    // This route asks for JSON too ({ paragraphs, wordCount }), so a response
+    // truncated by the token limit needs the same repair as the CV routes.
+    const parsed = parseModelJson(completion.choices[0].message.content || "");
+    if (!parsed) {
+      return NextResponse.json(
+        { error: "Failed to generate cover letter — please try again" },
+        { status: 500 }
+      );
+    }
 
     // Normalize the model output into exactly the body paragraphs
     let paragraphs: string[] = Array.isArray(parsed.paragraphs)
@@ -133,6 +142,15 @@ ${experienceSummary}`,
       : typeof parsed.coverLetter === "string"
         ? parsed.coverLetter.split(/\n\n+/).map((p: string) => p.trim()).filter(Boolean)
         : [];
+
+    // A truncated reply can repair into valid JSON with no usable body. Fail
+    // rather than hand back a letter that is only a header and a signature.
+    if (paragraphs.length === 0) {
+      return NextResponse.json(
+        { error: "Failed to generate cover letter — please try again" },
+        { status: 500 }
+      );
+    }
 
     // Build the recipient + signature blocks from data we control (never the model)
     const recipient = "Hiring Team";
