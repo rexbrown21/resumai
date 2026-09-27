@@ -83,97 +83,13 @@ export default function Tailor() {
   const [coverLetterError, setCoverLetterError] = useState("");
   const [coverLetterGenerated, setCoverLetterGenerated] = useState(false);
   const [showAllResumes, setShowAllResumes] = useState(false);
-  const [resumeListExpanded, setResumeListExpanded] = useState(false);
   // Progressive-disclosure step for Tailor mode only: 1 = resume, 2 = job, 3 = ready.
   const [tailorStep, setTailorStep] = useState(1);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadError, setUploadError] = useState("");
-  const [resumeInputMode, setResumeInputMode] = useState<"upload" | "paste">("upload");
+  // Set when the resume text was handed over from the /audit page.
+  const [auditLoaded, setAuditLoaded] = useState(false);
 
-  const loadCdnScript = (src: string): Promise<void> =>
-    new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${src}"]`)) { resolve(); return; }
-      const s = document.createElement("script");
-      s.src = src;
-      s.onload = () => resolve();
-      s.onerror = () => reject(new Error(`Failed to load ${src}`));
-      document.head.appendChild(s);
-    });
-
-  const extractPdfText = async (file: File): Promise<string> => {
-    const BASE = "https://cdn.jsdelivr.net/npm/pdfjs-dist@2.16.105/build";
-
-    await loadCdnScript(`${BASE}/pdf.min.js`);
-
-    const pdfjs = (window as any).pdfjsLib;
-    if (!pdfjs) throw new Error("PDF library failed to load. Please try again.");
-
-    // Fetch worker as a blob so it runs same-origin — avoids cross-origin worker blocks
-    const workerBlob = await fetch(`${BASE}/pdf.worker.min.js`).then(r => r.blob());
-    const workerUrl = URL.createObjectURL(workerBlob);
-    pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
-
-    try {
-      const arrayBuffer = await file.arrayBuffer();
-      const pdf = await pdfjs.getDocument({ data: new Uint8Array(arrayBuffer) }).promise;
-      const pages: string[] = [];
-      for (let i = 1; i <= pdf.numPages; i++) {
-        const page = await pdf.getPage(i);
-        const content = await page.getTextContent();
-        pages.push(content.items.map((item: any) => item.str || "").join(" "));
-      }
-      return pages.join("\n");
-    } finally {
-      URL.revokeObjectURL(workerUrl);
-    }
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploading(true);
-    setUploadError("");
-    setResumeText("");
-    try {
-      const name = file.name.toLowerCase();
-      let text = "";
-
-      if (name.endsWith(".txt") || name.endsWith(".rtf")) {
-        text = await file.text();
-      } else if (name.endsWith(".pdf")) {
-        text = await extractPdfText(file);
-      } else if (name.endsWith(".docx") || name.endsWith(".doc")) {
-        await loadCdnScript("https://cdn.jsdelivr.net/npm/mammoth@1/mammoth.browser.min.js");
-        const arrayBuffer = await file.arrayBuffer();
-        const result = await (window as any).mammoth.extractRawText({ arrayBuffer });
-        text = result.value;
-      } else {
-        setUploadError("Please upload a PDF, DOCX, or TXT file.");
-        return;
-      }
-
-      if (!text.trim()) {
-        setUploadError("Could not extract text. Try the 'Paste text' option instead.");
-        return;
-      }
-
-      setUploadedFile(file);
-      setResumeText(text.trim());
-      // Text now comes from the uploaded file, not a vault resume.
-      setLoadedResumeName(null);
-      setSelectedHasNoContent(false);
-    } catch (err: any) {
-      console.error("File parse error:", err);
-      setUploadError(err.message || "Failed to read file. Try pasting the text instead.");
-    } finally {
-      setUploading(false);
-      e.target.value = "";
-    }
-  };
-
-  // Selecting a vault resume auto-fills the resume text box from its saved
-  // extracted text. Clicking the selected one again toggles it off.
+  // Selecting a vault resume loads its saved extracted text as the resume to
+  // tailor. Clicking the selected one again toggles it off.
   const selectResume = (r: Resume) => {
     if (selectedResume?.id === r.id) {
       setSelectedResume(null);
@@ -184,8 +100,7 @@ export default function Tailor() {
     }
 
     setSelectedResume(r);
-    setUploadedFile(null);
-    setResumeInputMode("paste"); // show the textarea so the fill is visible
+    setAuditLoaded(false); // a vault pick supersedes any audit handoff
 
     // Prefer the uploaded file's extracted text; otherwise fall back to a
     // previously AI-generated resume's structured_data (rendered to plain text).
@@ -260,7 +175,7 @@ export default function Tailor() {
     if (auditText) {
       setMode("tailor");
       setResumeText(auditText);
-      setResumeInputMode("paste");
+      setAuditLoaded(true);
       setTailorStep(2);
       sessionStorage.removeItem("audit_resume_text");
     }
@@ -593,9 +508,9 @@ export default function Tailor() {
     setJobDesc(""); setCompany(""); setRole("");
     setResult(null); setSelectedResume(null); setResumeText("");
     setLoadedResumeName(null); setSelectedHasNoContent(false);
-    setResumeListExpanded(false); setTailorStep(1);
+    setShowAllResumes(false); setTailorStep(1);
     setSavedToVault(false); setAppLogged(false);
-    setUploadedFile(null); setUploadError("");
+    setAuditLoaded(false);
     setCoverLetter(""); setCoverLetterData(null); setCoverLetterGenerated(false); setCoverLetterError("");
   };
 
@@ -610,7 +525,8 @@ export default function Tailor() {
 
   // Label for the collapsed resume summary row across steps.
   const resumeSummaryLabel =
-    selectedResume?.name || uploadedFile?.name || (resumeText.trim() ? "Pasted resume text" : "");
+    selectedResume?.name ||
+    (auditLoaded ? "Resume from your audit" : resumeText.trim() ? "Loaded resume" : "");
 
   const generateCoverLetter = async () => {
     setCoverLetterLoading(true);
@@ -850,163 +766,98 @@ export default function Tailor() {
               </div>
             ) : (
               <>
-                {/* STEP 1 — Add your resume */}
+                {/* STEP 1 — Select your resume (vault or audit handoff only) */}
                 {tailorStep === 1 ? (
                 <div className="card" style={{ padding: "32px", animation: "fadeUp 0.4s ease" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, gap: 12, flexWrap: "wrap" }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                      <div className="tag">Step 1 · Add your resume</div>
-                      {loadedResumeName && (
-                        <span className="tag" style={{
-                          color: COLORS.accent,
-                          borderColor: `${COLORS.accent}55`,
-                          background: `${COLORS.accent}12`,
-                        }}>
-                          Loaded from: {loadedResumeName}
-                        </span>
-                      )}
-                    </div>
-                    <div style={{ display: "flex", gap: 2 }}>
-                      {(["upload", "paste"] as const).map(m => (
-                        <button key={m} onClick={() => setResumeInputMode(m)} style={{
-                          padding: "6px 14px", fontSize: 12, cursor: "pointer", borderRadius: 2,
-                          fontFamily: "'Syne', sans-serif", fontWeight: 600,
-                          background: resumeInputMode === m ? COLORS.accent : "transparent",
-                          color: resumeInputMode === m ? "#080808" : COLORS.textDim,
-                          border: `1px solid ${resumeInputMode === m ? COLORS.accent : COLORS.border}`,
-                        }}>
-                          {m === "upload" ? "Upload file" : "Paste text"}
-                        </button>
-                      ))}
-                    </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap", marginBottom: 16 }}>
+                    <div className="tag">Step 1 · Select your resume</div>
+                    {loadedResumeName && (
+                      <span className="tag" style={{
+                        color: COLORS.accent,
+                        borderColor: `${COLORS.accent}55`,
+                        background: `${COLORS.accent}12`,
+                      }}>
+                        Loaded from: {loadedResumeName}
+                      </span>
+                    )}
                   </div>
+
+                  {auditLoaded && (
+                    <div className="mono" style={{
+                      padding: "10px 14px", marginBottom: 16, fontSize: 12,
+                      color: COLORS.success, background: `${COLORS.success}10`,
+                      border: `1px solid ${COLORS.success}30`,
+                    }}>
+                      ✓ Resume loaded from your audit session
+                    </div>
+                  )}
 
                   {selectedHasNoContent && (
                     <p className="mono" style={{ color: COLORS.danger, fontSize: 12, marginBottom: 12, lineHeight: 1.6 }}>
-                      This resume has no saved content — please paste your resume text manually below.
+                      This resume has no saved content — delete and re-upload it in your Resume Vault, then come back.
                     </p>
                   )}
 
-                  {resumeInputMode === "upload" ? (
-                    uploadedFile ? (
-                      <>
-                        <div style={{
+                  {resumes.length > 0 ? (
+                    <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                      {(showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
+                        <div key={r.id} onClick={() => selectResume(r)} style={{
+                          padding: "14px 18px",
+                          border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
+                          background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
+                          cursor: "pointer", transition: "all 0.2s",
                           display: "flex", justifyContent: "space-between", alignItems: "center",
-                          padding: "10px 14px", background: `${COLORS.success}10`,
-                          border: `1px solid ${COLORS.success}30`, marginBottom: 12,
                         }}>
-                          <span className="mono" style={{ fontSize: 12, color: COLORS.success }}>
-                            ✓ {uploadedFile.name}
-                          </span>
-                          <button onClick={() => { setUploadedFile(null); setResumeText(""); }} style={{
-                            background: "transparent", border: "none", color: COLORS.textDim,
-                            fontSize: 12, cursor: "pointer", fontFamily: "'DM Mono', monospace",
-                          }}>
-                            Change file
-                          </button>
+                          <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
+                          <span className="tag">{r.type}</span>
                         </div>
-                        <textarea
-                          value={resumeText} onChange={e => setResumeText(e.target.value)}
+                      ))}
+                      {resumes.length > 6 && (
+                        <button
+                          onClick={() => setShowAllResumes(v => !v)}
                           style={{
-                            width: "100%", height: 200, padding: "14px 16px", borderRadius: 2,
-                            fontSize: 12, lineHeight: 1.7, resize: "none",
-                            fontFamily: "'DM Mono', monospace",
-                          }} />
-                      </>
-                    ) : (
-                      <>
-                        <input
-                          type="file" id="resume-file-input"
-                          accept=".pdf,.docx,.doc,.txt"
-                          onChange={handleFileUpload}
-                          style={{ display: "none" }}
-                        />
-                        <label htmlFor="resume-file-input" style={{
-                          display: "flex", flexDirection: "column", alignItems: "center",
-                          justifyContent: "center", gap: 10,
-                          height: 160, border: `2px dashed ${COLORS.border}`,
-                          cursor: uploading ? "wait" : "pointer",
-                          transition: "border-color 0.2s",
-                        }}>
-                          <span style={{ fontSize: 28 }}>📄</span>
-                          <span className="mono" style={{ fontSize: 13, color: COLORS.textDim }}>
-                            {uploading ? "Extracting text..." : "Click to upload your resume"}
-                          </span>
-                          <span className="mono" style={{ fontSize: 11, color: COLORS.textMuted }}>
-                            PDF, DOCX, or TXT
-                          </span>
-                        </label>
-                        {uploadError && (
-                          <p className="mono" style={{ color: COLORS.danger, fontSize: 12, marginTop: 10 }}>
-                            {uploadError}
-                          </p>
-                        )}
-                      </>
-                    )
-                  ) : (
-                    <textarea
-                      placeholder="Paste your full resume text here..."
-                      value={resumeText} onChange={e => setResumeText(e.target.value)}
-                      style={{
-                        width: "100%", height: 200, padding: "14px 16px", borderRadius: 2,
-                        fontSize: 13, lineHeight: 1.7, resize: "none",
-                        fontFamily: "'DM Mono', monospace",
-                      }} />
-                  )}
-                  {/* OR — choose a saved resume (folded into Step 1) */}
-                  {resumes.length > 0 && (
-                    <>
-                      <div style={{ display: "flex", alignItems: "center", gap: 16, padding: "16px 0" }}>
-                        <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-                        <span className="mono" style={{ fontSize: 12, color: COLORS.textMuted, letterSpacing: "0.15em" }}>OR</span>
-                        <div style={{ flex: 1, height: 1, background: COLORS.border }} />
-                      </div>
-                      <button
-                        className="btn-ghost"
-                        onClick={() => setResumeListExpanded(v => !v)}
-                        style={{ width: "100%", padding: "12px", borderRadius: 2, fontSize: 13 }}
-                      >
-                        {resumeListExpanded ? "Hide saved resumes" : `Choose a saved resume (${resumes.length})`}
-                      </button>
-                      {resumeListExpanded && (
-                        <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 12, animation: "fadeIn 0.3s ease" }}>
-                          {(showAllResumes ? resumes : resumes.slice(0, 6)).map(r => (
-                            <div key={r.id} onClick={() => { selectResume(r); setResumeListExpanded(false); }} style={{
-                              padding: "14px 18px",
-                              border: `1px solid ${selectedResume?.id === r.id ? COLORS.accent : COLORS.border}`,
-                              background: selectedResume?.id === r.id ? `${COLORS.accent}08` : "var(--surface-2)",
-                              cursor: "pointer", transition: "all 0.2s",
-                              display: "flex", justifyContent: "space-between", alignItems: "center",
-                            }}>
-                              <span style={{ fontSize: 14, fontWeight: 600, color: COLORS.text }}>{r.name}</span>
-                              <span className="tag">{r.type}</span>
-                            </div>
-                          ))}
-                          {resumes.length > 6 && (
-                            <button
-                              onClick={() => setShowAllResumes(v => !v)}
-                              style={{
-                                background: "transparent", border: "none", cursor: "pointer",
-                                color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
-                                marginTop: 4, padding: 0, alignSelf: "flex-start",
-                              }}
-                            >
-                              {showAllResumes ? "Show less" : `View all (${resumes.length})`}
-                            </button>
-                          )}
-                        </div>
+                            background: "transparent", border: "none", cursor: "pointer",
+                            color: COLORS.accent, fontSize: 12, fontFamily: "'DM Mono', monospace",
+                            marginTop: 4, padding: 0, alignSelf: "flex-start",
+                          }}
+                        >
+                          {showAllResumes ? "Show less" : `View all (${resumes.length})`}
+                        </button>
                       )}
-                    </>
+                    </div>
+                  ) : !auditLoaded && (
+                    <div style={{ border: `2px dashed ${COLORS.border}`, padding: "48px 32px", textAlign: "center" }}>
+                      <div style={{ fontSize: 28, marginBottom: 16 }}>📄</div>
+                      <h3 style={{ fontSize: 18, fontWeight: 700, color: COLORS.text, marginBottom: 8 }}>
+                        No resumes to tailor yet
+                      </h3>
+                      <p className="mono" style={{ color: COLORS.textMuted, fontSize: 13, lineHeight: 1.7, marginBottom: 24 }}>
+                        Tailoring starts from a resume you&apos;ve already added.<br />
+                        Audit one first, or add it to your vault.
+                      </p>
+                      <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+                        <button className="btn-primary" onClick={() => router.push("/audit")}
+                          style={{ padding: "12px 24px", borderRadius: 2 }}>
+                          Upload and audit your resume first →
+                        </button>
+                        <button className="btn-ghost" onClick={() => router.push("/resumes")}
+                          style={{ padding: "12px 24px", borderRadius: 2 }}>
+                          Go to Resume Vault →
+                        </button>
+                      </div>
+                    </div>
                   )}
 
-                  <button
-                    className="btn-primary"
-                    onClick={() => { setError(""); setTailorStep(2); }}
-                    disabled={!resumeText.trim()}
-                    style={{ width: "100%", padding: "16px", borderRadius: 2, fontSize: 14, marginTop: 20 }}
-                  >
-                    Continue →
-                  </button>
+                  {(resumes.length > 0 || auditLoaded) && (
+                    <button
+                      className="btn-primary"
+                      onClick={() => { setError(""); setTailorStep(2); }}
+                      disabled={!resumeText.trim()}
+                      style={{ width: "100%", padding: "16px", borderRadius: 2, fontSize: 14, marginTop: 20 }}
+                    >
+                      Continue →
+                    </button>
+                  )}
                 </div>
                 ) : (
                   <div className="card" style={{ padding: "18px 24px", display: "flex", justifyContent: "space-between", alignItems: "center", gap: 12, flexWrap: "wrap", animation: "fadeIn 0.3s ease" }}>

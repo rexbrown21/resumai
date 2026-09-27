@@ -150,18 +150,25 @@ export default function Dashboard() {
 
       <div style={{ display: "grid", gridTemplateColumns: "2fr 1fr", gap: 2, marginTop: 2 }}>
         <div className="card" style={{ padding: "40px" }}>
-          <div className="tag" style={{ marginBottom: 20 }}>Quick action</div>
+          <div className="tag" style={{ marginBottom: 20 }}>Quick actions</div>
           <h2 style={{ fontSize: 28, fontWeight: 800, letterSpacing: "-0.03em", marginBottom: 12, color: COLORS.text }}>
             Tailor a resume<br />
             <span className="serif">right now.</span>
           </h2>
           <p className="mono" style={{ color: COLORS.textDim, fontSize: 13, marginBottom: 28, lineHeight: 1.7 }}>
-            Paste a job description and let AI match and optimize your best-fit resume in seconds.
+            Paste a job description and let AI match and optimize your best-fit resume in seconds —
+            or score the one you have before you send it anywhere.
           </p>
-          <button className="btn-primary" data-tour="generate-link" onClick={() => router.push("/tailor")}
-            style={{ padding: "12px 28px", borderRadius: 2 }}>
-            Start tailoring →
-          </button>
+          <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+            <button className="btn-primary" data-tour="generate-link" onClick={() => router.push("/tailor")}
+              style={{ padding: "12px 28px", borderRadius: 2 }}>
+              Start tailoring →
+            </button>
+            <button className="btn-primary" data-tour="audit-link-alt" onClick={() => router.push("/audit")}
+              style={{ padding: "12px 28px", borderRadius: 2 }}>
+              Audit my resume →
+            </button>
+          </div>
         </div>
 
         <div className="card" data-tour="resumes-link-alt" style={{ padding: "40px", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
