@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson } from "@/lib/parseModelJson";
 import { GROQ_MODEL } from "@/lib/groqModel";
+import { createCompletionWithRetry, GROQ_TIME_BUDGET_MS } from "@/lib/groqRetry";
 
 // Without this the platform kills long generations and returns a non-JSON
 // body, which the client surfaces as a raw JSON parse error.
@@ -16,6 +17,8 @@ const supabaseAdmin = createClient(
 );
 
 export async function POST(req: NextRequest) {
+  const deadlineAt = Date.now() + GROQ_TIME_BUDGET_MS;
+
   try {
     const { jobDescription, userId, company, role, structured } = await req.json();
 
@@ -63,7 +66,7 @@ export async function POST(req: NextRequest) {
       day: "numeric",
     });
 
-    const completion = await groq.chat.completions.create({
+    const completion = await createCompletionWithRetry(groq, {
       model: GROQ_MODEL,
       messages: [
         {
@@ -131,7 +134,7 @@ ${experienceSummary}`,
       // thinking before emitting any content — at 800 the whole allowance could
       // go to reasoning and the content came back empty.
       max_tokens: 1500,
-    });
+    }, { deadlineAt, label: "cover-letter" });
 
     const choice = completion.choices?.[0];
     const text = choice?.message?.content ?? "";

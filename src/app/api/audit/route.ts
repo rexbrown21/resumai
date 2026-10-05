@@ -11,6 +11,7 @@ import {
   RoleType,
 } from "@/lib/auditRules";
 import { GROQ_MODEL } from "@/lib/groqModel";
+import { createCompletionWithRetry, GROQ_TIME_BUDGET_MS } from "@/lib/groqRetry";
 
 // Without this the platform kills long generations and returns a non-JSON
 // body, which the client surfaces as a raw JSON parse error.
@@ -19,38 +20,6 @@ export const maxDuration = 60;
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
 });
-
-async function createCompletionWithRetry(
-  params: Parameters<typeof groq.chat.completions.create>[0]
-): Promise<Groq.Chat.ChatCompletion> {
-  const maxAttempts = 3;
-  const backoffMs = [2000, 4000, 8000];
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return (await groq.chat.completions.create(
-        params
-      )) as Groq.Chat.ChatCompletion;
-    } catch (error: any) {
-      const isRateLimit =
-        error.status === 429 ||
-        error.message?.includes("rate_limit_exceeded") ||
-        error.error?.type === "rate_limit_error";
-
-      if (!isRateLimit || attempt === maxAttempts - 1) {
-        throw error;
-      }
-
-      const waitMs = backoffMs[attempt];
-      console.log(
-        `Rate limited on attempt ${attempt + 1}. Waiting ${waitMs}ms before retry...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-    }
-  }
-
-  throw new Error("rate_limit_exceeded");
-}
 
 const VALID_STATUSES: FlagStatus[] = ["good", "warning", "critical"];
 
@@ -121,6 +90,8 @@ function signalsForPrompt(baseline: AuditReport): string {
 }
 
 export async function POST(req: NextRequest) {
+  const deadlineAt = Date.now() + GROQ_TIME_BUDGET_MS;
+
   try {
     const { resumeText, roleType, company } = await req.json();
 
@@ -145,7 +116,7 @@ export async function POST(req: NextRequest) {
 
     let parsed: any = null;
     try {
-      const completion = await createCompletionWithRetry({
+      const completion = await createCompletionWithRetry(groq, {
         model: GROQ_MODEL,
         messages: [
           {
@@ -199,7 +170,7 @@ ${signalsForPrompt(baseline)}`,
         ],
         temperature: 0.4,
         max_tokens: 3000,
-      });
+      }, { deadlineAt, label: "audit" });
 
       const text = completion.choices[0].message.content || "";
       const clean = text.replace(/```json|```/g, "").trim();

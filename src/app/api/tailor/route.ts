@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 import { GROQ_MODEL } from "@/lib/groqModel";
+import { createCompletionWithRetry, GROQ_TIME_BUDGET_MS } from "@/lib/groqRetry";
 
 // Without this the platform kills long generations and returns a non-JSON
 // body, which the client surfaces as a raw JSON parse error.
@@ -35,39 +36,9 @@ function validateJobDescription(jobDescription: string): string | null {
   return null;
 }
 
-async function createCompletionWithRetry(
-  params: Parameters<typeof groq.chat.completions.create>[0]
-): Promise<Groq.Chat.ChatCompletion> {
-  const maxAttempts = 3;
-  const backoffMs = [2000, 4000, 8000];
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return (await groq.chat.completions.create(
-        params
-      )) as Groq.Chat.ChatCompletion;
-    } catch (error: any) {
-      const isRateLimit =
-        error.status === 429 ||
-        error.message?.includes("rate_limit_exceeded") ||
-        error.error?.type === "rate_limit_error";
-
-      if (!isRateLimit || attempt === maxAttempts - 1) {
-        throw error;
-      }
-
-      const waitMs = backoffMs[attempt];
-      console.log(
-        `Rate limited on attempt ${attempt + 1}. Waiting ${waitMs}ms before retry...`
-      );
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-    }
-  }
-
-  throw new Error("rate_limit_exceeded");
-}
-
 export async function POST(req: NextRequest) {
+  const deadlineAt = Date.now() + GROQ_TIME_BUDGET_MS;
+
   try {
     const { jobDescription, resumeText, resumeName, resumeId } = await req.json();
 
@@ -90,7 +61,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const completion = await createCompletionWithRetry({
+    const completion = await createCompletionWithRetry(groq, {
       model: GROQ_MODEL,
       messages: [
         {
@@ -179,7 +150,7 @@ ${resumeText}`,
       // smaller ceiling reduces the chance of running into Groq's per-minute
       // token limit mid-response.
       max_tokens: 2000,
-    });
+    }, { deadlineAt, label: "tailor" });
 
     const result = usableResumePayload(
       parseModelJson(completion.choices[0].message.content || "")

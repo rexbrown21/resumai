@@ -3,6 +3,7 @@ import Groq from "groq-sdk";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 import { GROQ_MODEL } from "@/lib/groqModel";
+import { createCompletionWithRetry, GROQ_TIME_BUDGET_MS } from "@/lib/groqRetry";
 
 // Serverless functions are killed at the platform's duration limit, and a kill
 // returns an empty/HTML body rather than JSON — which is what surfaced in the
@@ -23,10 +24,6 @@ const MAX_COMPLETION_TOKENS = 4000;
 const MAX_EXPERIENCE_CHARS = 200;
 const MAX_PROJECT_CHARS = 150;
 const MAX_JD_CHARS = 1000;
-
-// Headroom under maxDuration so we always return JSON ourselves rather than
-// letting the platform kill us mid-request.
-const TIME_BUDGET_MS = 50_000;
 
 // Full prompt logging contains the user's name, email and phone. Off unless
 // deliberately enabled for a debugging session.
@@ -62,50 +59,6 @@ function clip(value: unknown, max: number): string {
   return text.length > max ? `${text.slice(0, max)}…` : text;
 }
 
-async function createCompletionWithRetry(
-  params: Parameters<typeof groq.chat.completions.create>[0],
-  deadlineAt: number
-): Promise<Groq.Chat.ChatCompletion> {
-  const maxAttempts = 3;
-  const backoffMs = [1500, 3000];
-
-  for (let attempt = 0; attempt < maxAttempts; attempt++) {
-    try {
-      return (await groq.chat.completions.create(
-        params
-      )) as Groq.Chat.ChatCompletion;
-    } catch (error: any) {
-      const isRateLimit =
-        error.status === 429 ||
-        error.message?.includes("rate_limit_exceeded") ||
-        error.error?.type === "rate_limit_error";
-
-      console.error(`[generate-cv] groq attempt ${attempt + 1} failed`, {
-        status: error?.status,
-        type: error?.error?.type,
-        message: error?.message,
-        isRateLimit,
-        stack: error?.stack,
-      });
-
-      if (!isRateLimit || attempt === maxAttempts - 1) throw error;
-
-      // Don't start a wait-plus-inference cycle we cannot finish — being killed
-      // by the platform loses the JSON error body the client needs.
-      const waitMs = backoffMs[attempt] ?? 3000;
-      if (Date.now() + waitMs + 10_000 > deadlineAt) {
-        console.error("[generate-cv] abandoning retries: not enough time budget left");
-        throw error;
-      }
-
-      console.log(`[generate-cv] rate limited, waiting ${waitMs}ms`);
-      await new Promise((resolve) => setTimeout(resolve, waitMs));
-    }
-  }
-
-  throw new Error("rate_limit_exceeded");
-}
-
 /** Reachability + configuration check. Booleans only, never values. */
 export async function GET() {
   return NextResponse.json({
@@ -122,7 +75,7 @@ export async function GET() {
 
 export async function POST(req: NextRequest) {
   const startedAt = Date.now();
-  const deadlineAt = startedAt + TIME_BUDGET_MS;
+  const deadlineAt = startedAt + GROQ_TIME_BUDGET_MS;
 
   try {
     const { jobDescription, userId, company, role } = await req.json();
@@ -279,8 +232,9 @@ CERTIFICATIONS: ${certificationsBlock}`;
     }
 
     const completion = await createCompletionWithRetry(
+      groq,
       { model: MODEL, messages, temperature: 0.7, max_tokens: MAX_COMPLETION_TOKENS },
-      deadlineAt
+      { deadlineAt, label: "generate-cv" }
     );
 
     const choice = completion.choices?.[0];
