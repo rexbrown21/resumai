@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 
+// Without this the platform kills long generations and returns a non-JSON
+// body, which the client surfaces as a raw JSON parse error.
+export const maxDuration = 60;
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!

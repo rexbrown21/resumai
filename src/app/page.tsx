@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Nav from "@/components/layout/Nav";
@@ -8,42 +8,10 @@ import FloatingKeywords from "@/components/FloatingKeywords";
 import { useApp } from "@/lib/store";
 
 const MARQUEE_ITEMS = [
-  "ATS Optimized", "Tailored in 28s",
+  "ATS Optimized", "Tailored in Under 30s",
   "Your Voice", "AI-Powered",
-  "PDF Ready", "Real Results", "Every Application",
+  "PDF Ready", "Scored Out of 100", "Every Application",
 ];
-
-function CountUp({ target, suffix = "", prefix = "" }: { target: number; suffix?: string; prefix?: string }) {
-  const [count, setCount] = useState(0);
-  const ref = useRef<HTMLDivElement>(null);
-  const started = useRef(false);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(([entry]) => {
-      if (entry.isIntersecting && !started.current) {
-        started.current = true;
-        const duration = 1500;
-        const steps = 60;
-        const increment = target / steps;
-        let current = 0;
-        const timer = setInterval(() => {
-          current += increment;
-          if (current >= target) {
-            setCount(target);
-            clearInterval(timer);
-          } else {
-            setCount(Math.floor(current));
-          }
-        }, duration / steps);
-      }
-    }, { threshold: 0.5 });
-
-    if (ref.current) observer.observe(ref.current);
-    return () => observer.disconnect();
-  }, [target]);
-
-  return <div ref={ref}>{prefix}{count}{suffix}</div>;
-}
 
 function MarqueeTicker() {
   return (
@@ -185,35 +153,6 @@ export default function LandingPage() {
         {/* Marquee */}
         <MarqueeTicker />
 
-        {/* Stats */}
-        <section style={{ padding: "80px 24px", position: "relative", zIndex: 1 }}>
-          <div style={{
-            display: "grid", gridTemplateColumns: "repeat(3, 1fr)",
-            gap: 2, maxWidth: 900, margin: "0 auto",
-          }}>
-            {[
-              { target: 3, suffix: "x", prefix: "", label: "more interview callbacks", desc: "vs generic resume submissions" },
-              { target: 30, suffix: "s", prefix: "<", label: "to tailor per application", desc: "AI processes and optimizes instantly" },
-              { target: 100, suffix: "%", prefix: "", label: "your voice preserved", desc: "AI enhances, never replaces you" },
-            ].map(({ target, suffix, prefix, label, desc }) => (
-              <div key={label} className="card" style={{ padding: "40px 32px", textAlign: "center", position: "relative", overflow: "hidden" }}>
-                <div style={{
-                  position: "absolute", top: 0, left: 0, right: 0, height: 2,
-                  background: "var(--accent)", opacity: 0.6,
-                }} />
-                <div style={{
-                  fontSize: "clamp(36px, 6vw, 56px)", fontWeight: 800,
-                  color: "var(--accent)", letterSpacing: "-0.04em", lineHeight: 1,
-                }}>
-                  <CountUp target={target} suffix={suffix} prefix={prefix} />
-                </div>
-                <div style={{ fontWeight: 700, fontSize: 15, color: "var(--text)", marginTop: 12 }}>{label}</div>
-                <div className="mono" style={{ color: "var(--text-muted)", fontSize: 11, marginTop: 6 }}>{desc}</div>
-              </div>
-            ))}
-          </div>
-        </section>
-
         {/* How it works */}
         <section style={{ padding: "80px 24px", position: "relative", zIndex: 1 }}>
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
@@ -227,9 +166,9 @@ export default function LandingPage() {
             </h2>
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 2 }}>
               {[
-                { n: "01", title: "Upload your resumes", desc: "Store multiple versions — technical, managerial, consulting. Each one ready to be deployed.", icon: "⬆", color: "#e8ff47" },
-                { n: "02", title: "Paste the job", desc: "Drop in the job description. AI classifies role type, seniority, and required skills instantly.", icon: "📋", color: "#00d4ff" },
-                { n: "03", title: "AI tailors your resume", desc: "Llama 3.3 rewrites bullets, reorders sections, and surfaces the right keywords — in your voice.", icon: "✦", color: "#e8ff47" },
+                { n: "01", title: "Audit what you have", desc: "Upload your resume and see it scored out of 100 across structure, ATS compatibility, achievements and fit.", icon: "🔍", color: "#e8ff47" },
+                { n: "02", title: "Tailor it to the job", desc: "Paste the job description. AI rewrites your bullets in your voice — or builds a CV from scratch if you have none.", icon: "✦", color: "#00d4ff" },
+                { n: "03", title: "Add the cover letter", desc: "A matching letter from the same profile and posting. Download both as clean, ATS-ready PDFs.", icon: "✉", color: "#e8ff47" },
                 { n: "04", title: "Track every application", desc: "Log status, notes, and which resume version was sent. Never lose track of your pipeline.", icon: "📊", color: "#00ff88" },
               ].map(({ n, title, desc, icon, color }, i) => (
                 <div key={n} className="card step-card" style={{
@@ -291,7 +230,7 @@ export default function LandingPage() {
               transition: "all 0.2s",
             }}
           >
-            Start tailoring for free →
+            Start for free →
           </Link>
         </section>
 
@@ -310,7 +249,7 @@ export default function LandingPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             <span className="mono" style={{ color: "var(--text-muted)", fontSize: 11 }}>
-              © 2025 · Built with Groq + Llama 3.3 · Made for Africa
+              © 2026 · Built with Groq · Made for Africa
             </span>
             <Link href="/terms" className="mono" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
               Terms

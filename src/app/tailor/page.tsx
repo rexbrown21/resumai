@@ -264,7 +264,7 @@ export default function Tailor() {
     try {
       const endpoint = mode === "generate" ? "/api/generate-cv" : "/api/tailor";
       const body = mode === "generate"
-        ? { jobDescription: jobDesc, userId: user?.id }
+        ? { jobDescription: jobDesc, userId: user?.id, company, role }
         : { jobDescription: jobDesc, resumeText, resumeName: selectedResume?.name || "Resume", resumeId: selectedResume?.id };
 
       const res = await fetch(endpoint, {
@@ -273,17 +273,37 @@ export default function Tailor() {
         body: JSON.stringify(body),
       });
 
+      // A timed-out or crashed serverless function returns an empty or HTML
+      // body. Calling res.json() on that throws "Unexpected end of JSON input",
+      // which then reaches the user verbatim — so read text and parse by hand.
+      const payload = await res.text();
+      let data: any = null;
+      if (payload) {
+        try {
+          data = JSON.parse(payload);
+        } catch {
+          console.error("Non-JSON response from", endpoint, { status: res.status, body: payload.slice(0, 500) });
+        }
+      }
+
       if (!res.ok) {
-        const data = await res.json();
         if (res.status === 404 && mode === "generate") {
           setProfileMissing(true);
           setStep("input");
           return;
         }
-        throw new Error(data.error || "API call failed");
+        if (data?.error) throw new Error(data.error);
+        throw new Error(
+          res.status === 504 || res.status === 408
+            ? "That took too long to generate. Please try again."
+            : `The server returned an error (${res.status}). Please try again.`
+        );
       }
 
-      const data = await res.json();
+      if (!data) {
+        throw new Error("The server returned an empty response. Please try again.");
+      }
+
       setResult(data);
       setStep("result");
       saveToVault(data);

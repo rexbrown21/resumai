@@ -3,6 +3,29 @@ import Groq from "groq-sdk";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 
+// Serverless functions are killed at the platform's duration limit, and a kill
+// returns an empty/HTML body rather than JSON — which is what surfaced in the
+// UI as "Unexpected end of JSON input". Raising this is the real fix; the
+// deadline guard below keeps our own retries inside the budget.
+export const maxDuration = 60;
+
+// Single source of truth. This project has changed models four times; a second
+// literal in the health check would drift from the one in the request.
+const MODEL = "openai/gpt-oss-120b";
+
+// Input caps. Tunable — raise them if generated CVs start losing real detail.
+const MAX_EXPERIENCE_CHARS = 200;
+const MAX_PROJECT_CHARS = 150;
+const MAX_JD_CHARS = 1000;
+
+// Headroom under maxDuration so we always return JSON ourselves rather than
+// letting the platform kill us mid-request.
+const TIME_BUDGET_MS = 50_000;
+
+// Full prompt logging contains the user's name, email and phone. Off unless
+// deliberately enabled for a debugging session.
+const DEBUG_PROMPT = process.env.DEBUG_CV_PROMPT === "1";
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const supabase = createClient(
@@ -28,11 +51,17 @@ function validateJobDescription(jobDescription: string): string | null {
   return null;
 }
 
+function clip(value: unknown, max: number): string {
+  const text = String(value ?? "").replace(/\s+/g, " ").trim();
+  return text.length > max ? `${text.slice(0, max)}…` : text;
+}
+
 async function createCompletionWithRetry(
-  params: Parameters<typeof groq.chat.completions.create>[0]
+  params: Parameters<typeof groq.chat.completions.create>[0],
+  deadlineAt: number
 ): Promise<Groq.Chat.ChatCompletion> {
   const maxAttempts = 3;
-  const backoffMs = [2000, 4000, 8000];
+  const backoffMs = [1500, 3000];
 
   for (let attempt = 0; attempt < maxAttempts; attempt++) {
     try {
@@ -45,14 +74,25 @@ async function createCompletionWithRetry(
         error.message?.includes("rate_limit_exceeded") ||
         error.error?.type === "rate_limit_error";
 
-      if (!isRateLimit || attempt === maxAttempts - 1) {
+      console.error(`[generate-cv] groq attempt ${attempt + 1} failed`, {
+        status: error?.status,
+        type: error?.error?.type,
+        message: error?.message,
+        isRateLimit,
+        stack: error?.stack,
+      });
+
+      if (!isRateLimit || attempt === maxAttempts - 1) throw error;
+
+      // Don't start a wait-plus-inference cycle we cannot finish — being killed
+      // by the platform loses the JSON error body the client needs.
+      const waitMs = backoffMs[attempt] ?? 3000;
+      if (Date.now() + waitMs + 10_000 > deadlineAt) {
+        console.error("[generate-cv] abandoning retries: not enough time budget left");
         throw error;
       }
 
-      const waitMs = backoffMs[attempt];
-      console.log(
-        `Rate limited on attempt ${attempt + 1}. Waiting ${waitMs}ms before retry...`
-      );
+      console.log(`[generate-cv] rate limited, waiting ${waitMs}ms`);
       await new Promise((resolve) => setTimeout(resolve, waitMs));
     }
   }
@@ -60,9 +100,26 @@ async function createCompletionWithRetry(
   throw new Error("rate_limit_exceeded");
 }
 
+/** Reachability + configuration check. Booleans only, never values. */
+export async function GET() {
+  return NextResponse.json({
+    status: "ok",
+    model: MODEL,
+    env: {
+      GROQ_API_KEY: !!process.env.GROQ_API_KEY,
+      NEXT_PUBLIC_SUPABASE_URL: !!process.env.NEXT_PUBLIC_SUPABASE_URL,
+      SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY,
+    },
+    maxDuration,
+  });
+}
+
 export async function POST(req: NextRequest) {
+  const startedAt = Date.now();
+  const deadlineAt = startedAt + TIME_BUDGET_MS;
+
   try {
-    const { jobDescription, userId } = await req.json();
+    const { jobDescription, userId, company, role } = await req.json();
 
     if (!jobDescription || !userId) {
       return NextResponse.json(
@@ -76,7 +133,6 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: jdError }, { status: 400 });
     }
 
-    // Fetch user profile
     const { data, error } = await supabase
       .from("profiles_data")
       .select("profile")
@@ -84,6 +140,10 @@ export async function POST(req: NextRequest) {
       .single();
 
     if (error || !data?.profile) {
+      console.error("[generate-cv] profile lookup failed", {
+        userId,
+        supabaseError: error?.message,
+      });
       return NextResponse.json(
         { error: "Profile not found. Please complete your profile first." },
         { status: 404 }
@@ -91,216 +151,211 @@ export async function POST(req: NextRequest) {
     }
 
     const profile = data.profile;
-    console.log("Profile data:", JSON.stringify(profile, null, 2));
 
-    const completion = await createCompletionWithRetry({
-      model: "openai/gpt-oss-120b",
-      messages: [
-        {
-          role: "system",
-          content: `You are a world-class ATS resume writer. Transform the candidate's raw experience into a dense, one-page, ATS-optimized resume tailored to the specific job description.
-
-CONTENT RULES:
-1. NEVER invent experience — use only what the candidate provided. Rewrite everything; never copy raw profile text.
-2. Include ALL work roles, each with exactly 3 bullets. Include ALL projects, each with exactly 2 bullets. Never drop a role.
-3. EVERY bullet must contain a hard number: percentage (40%), multiplier (3x), count (100+ tickets), time saved (8 hours/week), scale (500,000 users), money ($200k), or team size (team of 8). If the notes lack numbers, estimate realistically from role seniority and company size.
-4. Keep every bullet to ONE line. Summary is 2 sentences maximum.
-5. Inject job-description keywords naturally into bullets. If the JD names a tool the candidate has adjacent experience with, write a bullet demonstrating it — don't just list it under skills.
-
-VERB RULES:
-1. Start every bullet with an action verb, and use each verb ONCE across the entire resume — no repeats in any section.
-2. BANNED verbs (overused): Developed, Designed, Built, Implemented, Managed, Created, Utilized, Leveraged, Assisted, Supported, Helped, Worked, Responsible, Contributed.
-3. Draw from these instead:
-   Technical: Architected, Engineered, Deployed, Configured, Integrated, Migrated, Containerized, Provisioned, Automated, Optimized, Refactored, Streamlined, Scaled, Modernized, Instrumented
-   Leadership: Led, Spearheaded, Championed, Directed, Coordinated, Facilitated, Mentored, Partnered, Liaised, Unified, Mobilized
-   Analysis: Analyzed, Evaluated, Identified, Assessed, Benchmarked, Modeled, Forecasted, Synthesized, Investigated, Audited, Mapped, Diagnosed, Quantified
-   Impact: Reduced, Increased, Improved, Accelerated, Eliminated, Saved, Generated, Boosted, Cut, Transformed, Delivered, Achieved, Recovered, Resolved, Exceeded
-   Communication: Presented, Documented, Authored, Published, Trained, Advised, Consulted, Negotiated, Pitched, Demonstrated
-
-UNIQUENESS RULES:
-1. No two bullets may share more than 3 consecutive words.
-2. Never reuse an outcome phrase, a metric phrasing, or a named tool anywhere else on the resume.
-3. Each role tells a different story — if role 1 is about automation, role 2 leads on a different theme.
-
-STYLE RULES:
-- Perfect American English, active voice only, no passive constructions.
-- No periods at the end of bullets. No comma splices.
-- Capitalize proper nouns, company names, products and acronyms only — not job titles mid-sentence.
-- Digits for all percentages and metrics (3x, 40%, $200k); spell out one through nine elsewhere.
-- Present tense for the current role, past tense for prior roles — no mixing within a role.
-- Never use vague quantifiers: several, multiple, various, many, numerous, significant.
-
-SKILLS RULES:
-- Organize into 3-5 categories of 3-5 items, most JD-relevant category first.
-- BASE: include every skill the candidate listed — these are confirmed.
-- SUPPLEMENT: add tools, frameworks and methodologies named in the JD that are plausible given their background (knows Python + JD wants FastAPI → add FastAPI).
-- INCLUSION TEST: a skill qualifies only if the candidate listed it, OR the JD names it AND it is plausible for them. Never fabricate beyond that.
-- Technical roles: categories like Programming Languages, Frameworks & Libraries, Tools & Platforms, Cloud & Infrastructure, AI/ML & Automation.
-- Non-technical roles: role competencies (Project Management, Stakeholder Engagement, Data Analysis), JD-named domain tools (Excel, Salesforce, Tableau), and soft skills ONLY where the JD explicitly lists them.
-
-SECTOR TAILORING:
-1. Identify the JD's sector first: Technical, Business, Creative, Finance, or Hybrid.
-2. Technical background + business/consulting JD: lead with business impact, technical method second. Emphasize cost savings, efficiency, stakeholder management, process improvement.
-3. Business background + technical JD: surface any tools and systems used, emphasize analytical and systems thinking.
-4. Graduate/entry-level programme: lead with academic achievement and GPA, emphasize leadership, teamwork and adaptability, ambitious growth-oriented tone.
-5. The summary must bridge the candidate's background to the target role by name — reference the specific company, the specific role, and the problem they are hiring to solve. Vary the opening structure each time (years of experience / key achievement / value brought). Acknowledge transferable skills directly on a sector mismatch.
-6. Order roles and bullets by what the JD emphasizes most — a DevOps JD brings DevOps roles to the top.
-7. Match the company's tone: startup JD gets direct and entrepreneurial, corporate JD gets structured and professional.
-
-NYSC AND CERTIFICATIONS:
-1. CRITICAL: if the profile has ANY NYSC information, it MUST appear as its own Education entry below the degree — non-negotiable for Nigerian applications:
-   National Youth Service Corps (NYSC)
-   [State of Deployment] | [Year]
-   PPA: [Primary Place of Assignment]
-2. NYSC status "Exempted" becomes an entry reading: NYSC Exemption Certificate — [Year]
-3. Certifications relevant to the JD go in the education array as "Name — Issuing Organisation (Year)", with a certificate ID in brackets after the year if provided. Filter out irrelevant ones.
-
-ATS FORMATTING:
-- Standard headers only: Professional Summary, Work Experience, Projects, Education, Skills.
-- No tables, columns, graphics, photos, colors or icons. No special characters beyond hyphens and pipes.
-- Dates as Mon YYYY - Mon YYYY.
-
-EXAMPLE TRANSFORMATION:
-- Raw: "I resolved customer tickets and helped with automation"
-- Output: "Resolved 100+ customer support tickets achieving 95% satisfaction rate while automating repetitive workflows using n8n"
-
-Before returning, verify: no verb repeats, every bullet has a number, no phrase appears twice. Fix any failures first.
-
-Respond ONLY with valid JSON — no markdown, no backticks, no explanation outside the JSON. Keep bullets tight so the response fits well within the token budget.
-
-Respond in this exact JSON format:
-{
-  "jobType": "Technical|Managerial|Consulting|Research|General",
-  "matchScore": <number 0-100>,
-  "keywords": ["keyword1", "keyword2", "keyword3", "keyword4", "keyword5"],
-  "suggestions": [
-    "Specific transformation made and why it strengthens the resume",
-    "Specific keyword injected and where",
-    "Specific cut made to keep it one page"
-  ],
-  "structured": {
-    "name": "Full Name",
-    "contact": "City, Country | phone | email | linkedin | github",
-    "summary": "One powerful sentence about who they are. One sentence about what they bring to this specific role.",
-    "experience": [
-      {
-        "title": "Job Title",
-        "company": "Company Name",
-        "location": "City, Country",
-        "period": "Mon YYYY - Mon YYYY",
-        "bullets": [
-          "Action verb + what you did + quantified impact",
-          "Action verb + what you did + quantified impact",
-          "Action verb + what you did + quantified impact"
-        ]
-      }
-    ],
-    "projects": [
-      {
-        "name": "Project Name",
-        "period": "YYYY",
-        "bullets": [
-          "Action verb + what you built + tech stack + impact"
-        ]
-      }
-    ],
-    "education": [
-      {
-        "degree": "Degree Name",
-        "school": "School Name",
-        "location": "City, Country",
-        "period": "YYYY - YYYY",
-        "gpa": "X.XX/5"
-      }
-    ],
-    "skills": {
-      "Category": "skill1, skill2, skill3"
-    }
-  }
-}`,
-        },
-        {
-          role: "user",
-          content: `IMPORTANT: This CV must be uniquely crafted for this specific job at this specific company. Do not use a template. Read the JD carefully, identify what this company values most, and build the entire CV around demonstrating exactly that. The candidate's raw experience is the raw material — your job is to sculpt it into the perfect fit for THIS role.
-
-JOB DESCRIPTION:
-${jobDescription}
-
-CANDIDATE PROFILE:
-Name: ${profile.name}
-Location: ${profile.location}
-Email: ${profile.email}
-Phone: ${profile.phone}
-LinkedIn: ${profile.linkedin}
-GitHub: ${profile.github}
-Summary: ${profile.summary}
-
-WORK EXPERIENCE:
-${profile.experience?.map((exp: any) => `
-${exp.title} at ${exp.company} (${exp.location}) — ${exp.period}
-${exp.bullets?.join(" ")}
-`).join("\n")}
-
-PROJECTS:
-${profile.projects?.map((proj: any) => `
-${proj.name} (${proj.period})
-${proj.bullets?.join(" ")}
-`).join("\n")}
-
-EDUCATION:
-${profile.education?.map((edu: any) => `
-${edu.degree} — ${edu.school}, ${edu.location} (${edu.period}) GPA: ${edu.gpa}
-`).join("\n")}
-
-SKILLS:
-${profile.skills?.map((s: any) => `${s.category}: ${s.values}`).join("\n")}
-
-NATIONAL SERVICE (NYSC):
-${profile.nationalService?.status
-  ? `Status: ${profile.nationalService.status}
-State of Deployment: ${profile.nationalService.stateOfDeployment || "Not specified"}
-Year Completed: ${profile.nationalService.year || "Not specified"}
-PPA: ${profile.nationalService.ppa || "Not specified"}`
-  : "NYSC information not provided"}
-
-CERTIFICATIONS:
-${profile.certifications?.length > 0
-  ? profile.certifications.map((c: any) =>
-      `- ${c.name} issued by ${c.issuingOrg} in ${c.year}${c.certId ? ` (ID: ${c.certId})` : ""}`
-    ).join("\n")
-  : "No certifications listed"}`,
-        },
-      ],
-      temperature: 0.7,
-      // Kept low deliberately: the CV JSON fits well under this, and a smaller
-      // ceiling reduces the chance of running into Groq's per-minute token
-      // limit mid-response.
-      max_tokens: 2000,
+    // Shape and size only — the profile itself is personal data.
+    console.log("[generate-cv] profile shape", {
+      experience: profile.experience?.length ?? 0,
+      projects: profile.projects?.length ?? 0,
+      education: profile.education?.length ?? 0,
+      skills: profile.skills?.length ?? 0,
+      certifications: profile.certifications?.length ?? 0,
+      hasNysc: !!profile.nationalService?.status,
+      profileChars: JSON.stringify(profile).length,
+      jdChars: jobDescription.length,
+      jdTruncated: jobDescription.length > MAX_JD_CHARS,
     });
 
-    const result = usableResumePayload(
-      parseModelJson(completion.choices[0].message.content || "")
+    const systemPrompt = `You are an expert ATS resume writer. Build a dense, one-page, ATS-optimized CV from the candidate's profile, tailored to the target job.
+
+RULES
+1. Never invent experience. Use only the profile, and rewrite it rather than copying it.
+2. Include every work role (exactly 3 bullets each) and every project (exactly 2 bullets each). Drop nothing.
+3. Every bullet needs a hard number: percentage, multiplier, count, time saved, scale, money, or team size. If the notes have none, estimate realistically from the role and company.
+4. One line per bullet. The summary is 2 sentences and names the target role, and the company when one is given.
+5. Start each bullet with an action verb, and use each verb only once in the whole CV.
+6. Never use these verbs: Developed, Designed, Built, Implemented, Managed, Created, Utilized, Leveraged, Assisted, Supported, Helped, Worked, Responsible, Contributed.
+7. Never reuse an outcome phrase, a metric phrasing, or a named tool twice.
+8. Work the job description's keywords naturally into bullets.
+9. Skills: 3-5 categories of 3-5 items, most job-relevant first. Include every skill the profile lists, plus tools the job description names that are plausible for this background. Nothing beyond that.
+10. American English, active voice, no period ending a bullet, digits for every metric, present tense for the current role and past tense for earlier ones.
+11. Never use: several, multiple, various, many, numerous, significant.
+12. If the profile has any NYSC data it MUST appear as its own education entry — degree "National Youth Service Corps (NYSC)", school the PPA, location the state of deployment, period the year. Non-negotiable for Nigerian applications. Status "Exempted" becomes degree "NYSC Exemption Certificate".
+13. Certifications relevant to the job join the education array as degree "Name — Organisation (Year)". Omit irrelevant ones.
+14. Standard sections only. No tables, columns, graphics or icons. Dates as "Mon YYYY - Mon YYYY".
+
+Return ONLY raw JSON — no markdown, no backticks, no commentary — in exactly this shape:
+{"jobType":"Technical|Managerial|Consulting|Research|General","matchScore":<0-100>,"keywords":["k1","k2","k3","k4","k5"],"suggestions":["change made","keyword injected","cut made"],"structured":{"name":"","contact":"City, Country | phone | email | linkedin | github","summary":"","experience":[{"title":"","company":"","location":"","period":"","bullets":["","",""]}],"projects":[{"name":"","period":"","bullets":["",""]}],"education":[{"degree":"","school":"","location":"","period":"","gpa":""}],"skills":{"Category":"skill, skill, skill"}}}
+
+Keep bullets tight so the JSON closes well inside the token budget.`;
+
+    const experienceBlock = (profile.experience ?? [])
+      .map((exp: any) =>
+        `${exp.title} at ${exp.company}, ${exp.location} (${exp.period})\n${clip(exp.bullets?.join(" "), MAX_EXPERIENCE_CHARS)}`
+      )
+      .join("\n") || "None provided";
+
+    const projectsBlock = (profile.projects ?? [])
+      .map((proj: any) =>
+        `${proj.name} (${proj.period}): ${clip(proj.bullets?.join(" "), MAX_PROJECT_CHARS)}`
+      )
+      .join("\n") || "None provided";
+
+    const educationBlock = (profile.education ?? [])
+      .map((edu: any) =>
+        `${edu.degree} — ${edu.school}, ${edu.location} (${edu.period})${edu.gpa ? ` GPA: ${edu.gpa}` : ""}`
+      )
+      .join("\n") || "None provided";
+
+    const skillsBlock = (profile.skills ?? [])
+      .map((s: any) => `${s.category}: ${s.values}`)
+      .join(" | ") || "None provided";
+
+    const nyscBlock = profile.nationalService?.status
+      ? [
+          profile.nationalService.status,
+          profile.nationalService.stateOfDeployment,
+          profile.nationalService.year,
+          profile.nationalService.ppa ? `PPA: ${profile.nationalService.ppa}` : "",
+        ].filter(Boolean).join(", ")
+      : "Not provided";
+
+    const certificationsBlock = (profile.certifications ?? [])
+      .map((c: any) => `${c.name} (${c.issuingOrg}, ${c.year})`)
+      .join("; ") || "None";
+
+    const userPrompt = `TARGET JOB
+Company: ${company || "Not specified"}
+Role: ${role || "See job description"}
+Job Description: ${clip(jobDescription, MAX_JD_CHARS)}
+
+CANDIDATE PROFILE
+Name: ${profile.name ?? ""}
+Location: ${profile.location ?? ""}
+Contact: ${profile.phone ?? ""} | ${profile.email ?? ""}
+LinkedIn: ${profile.linkedin ?? ""}
+GitHub: ${profile.github ?? ""}
+Summary: ${clip(profile.summary, 300)}
+
+EXPERIENCE
+${experienceBlock}
+
+PROJECTS
+${projectsBlock}
+
+EDUCATION
+${educationBlock}
+
+SKILLS: ${skillsBlock}
+
+NYSC: ${nyscBlock}
+
+CERTIFICATIONS: ${certificationsBlock}`;
+
+    const messages = [
+      { role: "system" as const, content: systemPrompt },
+      { role: "user" as const, content: userPrompt },
+    ];
+
+    console.log("[generate-cv] prompt size", {
+      systemChars: systemPrompt.length,
+      userChars: userPrompt.length,
+      totalChars: systemPrompt.length + userPrompt.length,
+      roughPromptTokens: Math.ceil((systemPrompt.length + userPrompt.length) / 4),
+      maxTokens: 2000,
+    });
+
+    if (DEBUG_PROMPT) {
+      console.log(
+        "[generate-cv] FULL PROMPT (contains personal data)",
+        JSON.stringify(messages, null, 2)
+      );
+    }
+
+    const completion = await createCompletionWithRetry(
+      { model: MODEL, messages, temperature: 0.7, max_tokens: 2000 },
+      deadlineAt
     );
-    if (!result) {
+
+    const choice = completion.choices?.[0];
+    const raw = choice?.message?.content ?? "";
+    const finishReason = choice?.finish_reason;
+
+    // finish_reason === "length" is the definitive signal that the token
+    // ceiling cut the response off, as opposed to any other failure.
+    console.log("[generate-cv] response", {
+      finishReason,
+      truncatedByTokenLimit: finishReason === "length",
+      rawChars: raw.length,
+      promptTokens: completion.usage?.prompt_tokens,
+      completionTokens: completion.usage?.completion_tokens,
+      totalTokens: completion.usage?.total_tokens,
+      elapsedMs: Date.now() - startedAt,
+    });
+
+    if (!raw.trim()) {
+      console.error("[generate-cv] model returned an empty body", {
+        finishReason,
+        usage: completion.usage,
+      });
       return NextResponse.json(
-        { error: "Failed to generate CV — please try again" },
+        {
+          error: "The model returned an empty response. Please try again.",
+          reason: "empty_response",
+        },
+        { status: 502 }
+      );
+    }
+
+    const parsed = parseModelJson(raw);
+    const result = usableResumePayload(parsed);
+
+    if (!result) {
+      // The tail is where truncation shows, and it carries less personal data
+      // than the head of the JSON.
+      console.error("[generate-cv] unusable payload", {
+        finishReason,
+        rawChars: raw.length,
+        repairedToObject: !!parsed,
+        rawTail: raw.slice(-400),
+      });
+      return NextResponse.json(
+        {
+          error: finishReason === "length"
+            ? "The CV came back incomplete — it hit the token limit. Try again, or trim your profile notes."
+            : "Failed to generate CV — please try again",
+          reason: finishReason === "length" ? "truncated" : "unparseable",
+        },
         { status: 500 }
       );
     }
 
-    return NextResponse.json(result);
-  } catch (error) {
-    const isRateLimit =
-      error instanceof Error &&
-      (error.message.includes("rate_limit_exceeded") ||
-        (error as any).status === 429);
+    console.log("[generate-cv] success", {
+      experience: result.structured.experience.length,
+      projects: result.structured.projects.length,
+      education: result.structured.education.length,
+      elapsedMs: Date.now() - startedAt,
+    });
 
-    console.error("Generate CV error:", error);
+    return NextResponse.json(result);
+  } catch (error: any) {
+    const isRateLimit =
+      error?.status === 429 ||
+      (error instanceof Error && error.message.includes("rate_limit_exceeded"));
+
+    console.error("[generate-cv] request failed", {
+      status: error?.status,
+      type: error?.error?.type,
+      message: error?.message,
+      elapsedMs: Date.now() - startedAt,
+      stack: error?.stack,
+    });
+
     return NextResponse.json(
       {
         error: isRateLimit
           ? "We're experiencing high demand right now. Please try again in a moment."
           : "Failed to generate CV",
+        reason: isRateLimit ? "rate_limit" : "server_error",
       },
       { status: isRateLimit ? 429 : 500 }
     );

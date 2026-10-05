@@ -49,7 +49,9 @@ export default function FloatingKeywords() {
 
   return (
     <>
-      <div style={{
+      {/* Purely decorative — hidden from screen readers so the drifting skill
+          words aren't announced as page content. */}
+      <div aria-hidden="true" style={{
         position: "fixed", top: 0, left: 0, width: "100%", height: "100%",
         pointerEvents: "none", zIndex: 0, overflow: "hidden",
       }}>

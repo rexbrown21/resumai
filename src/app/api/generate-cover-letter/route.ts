@@ -3,6 +3,10 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson } from "@/lib/parseModelJson";
 
+// Without this the platform kills long generations and returns a non-JSON
+// body, which the client surfaces as a raw JSON parse error.
+export const maxDuration = 60;
+
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const supabaseAdmin = createClient(
