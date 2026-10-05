@@ -17,7 +17,7 @@ type StepDef = {
 const STEP_DEFS: StepDef[] = [
   {
     selectors: ['[data-tour="welcome"]'],
-    title: "Welcome to RezumeAI!",
+    title: "Welcome to RexumeGo!",
     description: "Let's take a quick tour of what you can do here.",
   },
   {

@@ -45,9 +45,9 @@ export default function Nav() {
         <Link href={user ? "/dashboard" : "/"} style={{
           display: "flex", alignItems: "center", gap: 8, textDecoration: "none",
         }}>
-          <img src="/logo.svg" width="28" height="28" alt="RezumeAI" style={{ marginRight: '8px' }} />
+          <img src="/logo.svg" width="28" height="28" alt="RexumeGo" style={{ marginRight: '8px' }} />
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: "var(--text)" }}>
-            REZUMEAI
+            REXUMEGO
           </span>
         </Link>
 
