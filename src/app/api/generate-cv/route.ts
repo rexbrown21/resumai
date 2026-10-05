@@ -9,9 +9,16 @@ import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 // deadline guard below keeps our own retries inside the budget.
 export const maxDuration = 60;
 
-// Single source of truth. This project has changed models four times; a second
-// literal in the health check would drift from the one in the request.
-const MODEL = "openai/gpt-oss-120b";
+// Single source of truth — the health check reads this same constant, so the
+// two can never drift. Overridable from the environment because this project
+// has now changed models five times: a wrong id can be corrected from the
+// Vercel dashboard without shipping code.
+const MODEL = process.env.GROQ_MODEL ?? "qwen/qwen3.8-27b";
+
+// Reasoning-capable models spend part of this budget thinking before emitting
+// any content. At 2000 the entire budget could go to reasoning, leaving content
+// empty with finish_reason "length" — the empty-response failure being fixed.
+const MAX_COMPLETION_TOKENS = 4000;
 
 // Input caps. Tunable — raise them if generated CVs start losing real detail.
 const MAX_EXPERIENCE_CHARS = 200;
@@ -261,7 +268,8 @@ CERTIFICATIONS: ${certificationsBlock}`;
       userChars: userPrompt.length,
       totalChars: systemPrompt.length + userPrompt.length,
       roughPromptTokens: Math.ceil((systemPrompt.length + userPrompt.length) / 4),
-      maxTokens: 2000,
+      maxTokens: MAX_COMPLETION_TOKENS,
+      model: MODEL,
     });
 
     if (DEBUG_PROMPT) {
@@ -272,7 +280,7 @@ CERTIFICATIONS: ${certificationsBlock}`;
     }
 
     const completion = await createCompletionWithRetry(
-      { model: MODEL, messages, temperature: 0.7, max_tokens: 2000 },
+      { model: MODEL, messages, temperature: 0.7, max_tokens: MAX_COMPLETION_TOKENS },
       deadlineAt
     );
 
@@ -292,6 +300,10 @@ CERTIFICATIONS: ${certificationsBlock}`;
       elapsedMs: Date.now() - startedAt,
     });
 
+    if (finishReason === "length") {
+      console.log("Response cut off — finish_reason: length");
+    }
+
     if (!raw.trim()) {
       console.error("[generate-cv] model returned an empty body", {
         finishReason,
@@ -299,10 +311,15 @@ CERTIFICATIONS: ${certificationsBlock}`;
       });
       return NextResponse.json(
         {
-          error: "The model returned an empty response. Please try again.",
-          reason: "empty_response",
+          // Empty content with finish_reason "length" means the model burned the
+          // whole budget before writing anything — a different fault from a
+          // model that simply returned nothing.
+          error: finishReason === "length"
+            ? "The model used its entire token budget before writing the CV. Please try again."
+            : "The model returned an empty response. Please try again.",
+          reason: finishReason === "length" ? "budget_exhausted" : "empty_response",
         },
-        { status: 502 }
+        { status: 500 }
       );
     }
 
@@ -321,7 +338,7 @@ CERTIFICATIONS: ${certificationsBlock}`;
       return NextResponse.json(
         {
           error: finishReason === "length"
-            ? "The CV came back incomplete — it hit the token limit. Try again, or trim your profile notes."
+            ? "Response was too long and got cut off. Try a shorter job description."
             : "Failed to generate CV — please try again",
           reason: finishReason === "length" ? "truncated" : "unparseable",
         },
