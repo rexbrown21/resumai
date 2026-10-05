@@ -2,6 +2,7 @@ import Groq from "groq-sdk";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson } from "@/lib/parseModelJson";
+import { GROQ_MODEL } from "@/lib/groqModel";
 
 // Without this the platform kills long generations and returns a non-JSON
 // body, which the client surfaces as a raw JSON parse error.
@@ -63,7 +64,7 @@ export async function POST(req: NextRequest) {
     });
 
     const completion = await groq.chat.completions.create({
-      model: "openai/gpt-oss-120b",
+      model: GROQ_MODEL,
       messages: [
         {
           role: "system",
@@ -125,15 +126,42 @@ ${experienceSummary}`,
         },
       ],
       temperature: 0.75,
-      // Four paragraphs of 250-320 words fit comfortably here, and the lower
-      // ceiling reduces exposure to Groq's per-minute token limit.
-      max_tokens: 800,
+      // Four paragraphs of 250-320 words need roughly 450 tokens. The rest is
+      // headroom for reasoning-capable models, which spend part of this budget
+      // thinking before emitting any content — at 800 the whole allowance could
+      // go to reasoning and the content came back empty.
+      max_tokens: 1500,
     });
+
+    const choice = completion.choices?.[0];
+    const text = choice?.message?.content ?? "";
+
+    if (choice?.finish_reason === "length") {
+      console.log("Cover letter cut off — finish_reason: length");
+    }
+
+    if (!text || text.trim() === "") {
+      console.error("[cover-letter] model returned an empty completion", {
+        model: GROQ_MODEL,
+        finishReason: choice?.finish_reason,
+        promptTokens: completion.usage?.prompt_tokens,
+        completionTokens: completion.usage?.completion_tokens,
+      });
+      return NextResponse.json(
+        { error: "The model returned an empty response. Please try again." },
+        { status: 500 }
+      );
+    }
 
     // This route asks for JSON too ({ paragraphs, wordCount }), so a response
     // truncated by the token limit needs the same repair as the CV routes.
-    const parsed = parseModelJson(completion.choices[0].message.content || "");
+    const parsed = parseModelJson(text);
     if (!parsed) {
+      console.error("[cover-letter] reply would not parse, even repaired", {
+        finishReason: choice?.finish_reason,
+        rawChars: text.length,
+        rawTail: text.slice(-300),
+      });
       return NextResponse.json(
         { error: "Failed to generate cover letter — please try again" },
         { status: 500 }
@@ -191,8 +219,35 @@ ${experienceSummary}`,
       signature: name,
       wordCount,
     });
-  } catch (error) {
-    console.error("Cover letter error:", error);
-    return NextResponse.json({ error: "Failed to generate cover letter" }, { status: 500 });
+  } catch (error: any) {
+    // An Error's own properties are non-enumerable, so JSON.stringify(error)
+    // prints "{}" and tells you nothing. Pull the useful fields out by name,
+    // including the Groq error body, which is where a bad model id or a rate
+    // limit actually explains itself.
+    console.error("Cover letter generation error:", {
+      name: error?.name,
+      message: error?.message,
+      status: error?.status,
+      groqErrorType: error?.error?.type,
+      groqErrorCode: error?.error?.code,
+      groqErrorBody: error?.error ? JSON.stringify(error.error) : undefined,
+      model: GROQ_MODEL,
+      stack: error?.stack,
+    });
+
+    const isRateLimit =
+      error?.status === 429 ||
+      error?.error?.type === "rate_limit_error" ||
+      (error instanceof Error && error.message.includes("rate_limit_exceeded"));
+
+    return NextResponse.json(
+      {
+        error: isRateLimit
+          ? "We're experiencing high demand right now. Please try again in a moment."
+          : "Failed to generate cover letter",
+        reason: isRateLimit ? "rate_limit" : "server_error",
+      },
+      { status: isRateLimit ? 429 : 500 }
+    );
   }
 }

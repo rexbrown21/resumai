@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Groq from "groq-sdk";
 import { createClient } from "@supabase/supabase-js";
 import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
+import { GROQ_MODEL } from "@/lib/groqModel";
 
 // Serverless functions are killed at the platform's duration limit, and a kill
 // returns an empty/HTML body rather than JSON — which is what surfaced in the
@@ -9,11 +10,9 @@ import { parseModelJson, usableResumePayload } from "@/lib/parseModelJson";
 // deadline guard below keeps our own retries inside the budget.
 export const maxDuration = 60;
 
-// Single source of truth — the health check reads this same constant, so the
-// two can never drift. Overridable from the environment because this project
-// has now changed models five times: a wrong id can be corrected from the
-// Vercel dashboard without shipping code.
-const MODEL = process.env.GROQ_MODEL ?? "qwen/qwen3.8-27b";
+// Shared across every AI route so the id can't drift between them, and read by
+// the health check below so it always reports what is actually in use.
+const MODEL = GROQ_MODEL;
 
 // Reasoning-capable models spend part of this budget thinking before emitting
 // any content. At 2000 the entire budget could go to reasoning, leaving content

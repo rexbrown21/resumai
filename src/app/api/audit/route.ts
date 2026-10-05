@@ -10,6 +10,7 @@ import {
   FlagStatus,
   RoleType,
 } from "@/lib/auditRules";
+import { GROQ_MODEL } from "@/lib/groqModel";
 
 // Without this the platform kills long generations and returns a non-JSON
 // body, which the client surfaces as a raw JSON parse error.
@@ -145,7 +146,7 @@ export async function POST(req: NextRequest) {
     let parsed: any = null;
     try {
       const completion = await createCompletionWithRetry({
-        model: "openai/gpt-oss-120b",
+        model: GROQ_MODEL,
         messages: [
           {
             role: "system",
