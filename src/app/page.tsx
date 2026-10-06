@@ -82,11 +82,6 @@ export default function LandingPage() {
           justifyContent: "center", alignItems: "center", textAlign: "center",
           padding: "120px 24px 80px", position: "relative", zIndex: 1,
         }}>
-          <div className="tag animate-fade-up" style={{ marginBottom: 32, animationDelay: "0.1s", opacity: 0 }}>
-            <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--accent)", display: "inline-block", animation: "pulse 2s infinite" }} />
-            AI-Powered Resume Intelligence
-          </div>
-
           <h1 className="animate-fade-up" style={{
             fontSize: "clamp(48px, 9vw, 120px)", fontWeight: 800,
             letterSpacing: "-0.04em", lineHeight: 0.95,
@@ -100,7 +95,7 @@ export default function LandingPage() {
             color: "var(--text-dim)", fontSize: 15, maxWidth: 480, marginTop: 32,
             lineHeight: 1.7, animationDelay: "0.35s", opacity: 0, padding: "0 8px",
           }}>
-            Stop sending the same resume everywhere. Let AI read the job, find the fit, and tailor your story — every single time.
+            Stop sending the same resume everywhere. Let RexumeGo read the job, find the fit, and tailor your story — every single time.
           </p>
 
           <div className="animate-fade-up" style={{
@@ -167,7 +162,7 @@ export default function LandingPage() {
             <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))", gap: 2 }}>
               {[
                 { n: "01", title: "Audit what you have", desc: "Upload your resume and see it scored out of 100 across structure, ATS compatibility, achievements and fit.", icon: "🔍", color: "#e8ff47" },
-                { n: "02", title: "Tailor it to the job", desc: "Paste the job description. AI rewrites your bullets in your voice — or builds a CV from scratch if you have none.", icon: "✦", color: "#00d4ff" },
+                { n: "02", title: "Tailor it to the job", desc: "Paste the job description. RexumeGo rewrites your bullets in your voice — or builds a CV from scratch if you have none.", icon: "✦", color: "#00d4ff" },
                 { n: "03", title: "Add the cover letter", desc: "A matching letter from the same profile and posting. Download both as clean, ATS-ready PDFs.", icon: "✉", color: "#e8ff47" },
                 { n: "04", title: "Track every application", desc: "Log status, notes, and which resume version was sent. Never lose track of your pipeline.", icon: "📊", color: "#00ff88" },
               ].map(({ n, title, desc, icon, color }, i) => (
@@ -249,7 +244,7 @@ export default function LandingPage() {
           </div>
           <div style={{ display: "flex", alignItems: "center", gap: 20, flexWrap: "wrap" }}>
             <span className="mono" style={{ color: "var(--text-muted)", fontSize: 11 }}>
-              © 2026 · Built with Groq · Made for Africa
+              © 2026 Ugochukwu
             </span>
             <Link href="/terms" className="mono" style={{ color: "var(--text-muted)", fontSize: 11, textDecoration: "none" }}>
               Terms

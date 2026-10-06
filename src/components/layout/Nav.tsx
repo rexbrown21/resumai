@@ -47,7 +47,7 @@ export default function Nav() {
         }}>
           <img src="/logo.svg" width="28" height="28" alt="RexumeGo" style={{ marginRight: '8px' }} />
           <span style={{ fontWeight: 800, fontSize: 16, letterSpacing: "-0.02em", color: "var(--text)" }}>
-            REXUMEGO
+            RexumeGo
           </span>
         </Link>
 
