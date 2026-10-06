@@ -3,12 +3,62 @@
 import { useState, useEffect } from "react";
 
 const KEYWORDS = [
-  "Python", "Leadership", "Product Manager", "AWS", "React", "TypeScript",
-  "DevOps", "Machine Learning", "Kubernetes", "SQL", "Agile", "Scrum",
-  "CI/CD", "Docker", "Node.js", "Data Analysis", "Strategic Planning",
-  "Stakeholder Management", "API Design", "Prompt Engineering", "n8n",
-  "Automation", "FastAPI", "Communication", "Problem Solving", "Git",
-  "Figma", "UX Research", "Cloud Architecture", "Team Lead",
+  // Tech & Engineering
+  "Python", "TypeScript", "React", "Node.js",
+  "AWS", "Docker", "Kubernetes", "REST APIs",
+  "Machine Learning", "LLMs", "n8n", "DevOps",
+  "CI/CD", "Microservices", "PostgreSQL", "Git",
+
+  // Product & Design
+  "Product Roadmap", "User Research", "Figma",
+  "A/B Testing", "KPIs", "Agile", "Scrum",
+  "Wireframes", "Design System", "Prototyping",
+  "User Stories", "OKRs", "Sprint Planning",
+
+  // Finance & Data
+  "Financial Modeling", "SQL", "Power BI",
+  "Tableau", "Excel", "Forecasting", "Budgeting",
+  "Risk Analysis", "Data Analysis", "Reporting",
+  "Audit", "Compliance", "Reconciliation",
+
+  // Marketing & Growth
+  "SEO", "Content Strategy", "Google Analytics",
+  "Campaign Management", "Brand Strategy",
+  "Social Media", "Copywriting", "Email Marketing",
+  "Growth Hacking", "Conversion Rate", "CRM",
+
+  // Operations & Management
+  "Project Management", "Stakeholder Management",
+  "Process Improvement", "PMP", "Vendor Management",
+  "Supply Chain", "Logistics", "Team Leadership",
+  "Strategic Planning", "Change Management",
+
+  // People & HR
+  "Talent Acquisition", "Onboarding", "HRIS",
+  "Performance Management", "Employee Relations",
+  "Payroll", "Recruitment", "L&D", "Culture",
+
+  // Healthcare & Science
+  "Clinical Research", "GCP", "Pharmacovigilance",
+  "Public Health", "Laboratory", "Data Collection",
+  "Research Methodology", "IRB", "Grant Writing",
+
+  // Legal & Compliance
+  "Contract Review", "Due Diligence", "GDPR",
+  "Regulatory Affairs", "Legal Research",
+  "Risk Management", "Policy Writing",
+
+  // Education & NGO
+  "Curriculum Design", "Program Evaluation",
+  "Community Engagement", "Grant Management",
+  "M&E", "Capacity Building", "Advocacy",
+  "Stakeholder Engagement", "Impact Reporting",
+
+  // Universal
+  "Communication", "Leadership", "Collaboration",
+  "Problem Solving", "Critical Thinking",
+  "Presentation", "Negotiation", "Mentorship",
+  "NYSC", "Abuja", "Lagos", "Remote", "Hybrid",
 ];
 
 const LIGHT_NEON_COLORS = [
