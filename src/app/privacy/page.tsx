@@ -65,7 +65,9 @@ export default function Privacy() {
           </Section>
 
           <Section title="7. Data Sharing">
-            We do not sell, rent, or share your personal data with third parties except: (a) service providers necessary to operate the platform (Supabase, Groq, Vercel); (b) when required by law or valid legal process; (c) to protect the rights, safety, or property of RexumeGo or its users.
+            We do not sell, rent, or share your personal data with third parties except: (a) service providers necessary to operate the platform (Supabase, Groq, Vercel, Google); (b) when required by law or valid legal process; (c) to protect the rights, safety, or property of RexumeGo or its users.
+            <br /><br />
+            <strong style={{ color: COLORS.text }}>Google (logo CDN):</strong> To display company logos on your saved resumes and tracked applications, your browser requests an icon from Google&apos;s favicon service for the company domain. That request is made directly by your browser, so it includes your IP address and the company name involved. We send no account details, resume content, or contact information to Google.
           </Section>
 
           <Section title="8. Your Rights">

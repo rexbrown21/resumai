@@ -27,7 +27,7 @@ const PROVIDERS = {
 } satisfies Record<string, LogoProvider>;
 
 /** Switch providers by changing this one value. */
-const LOGO_PROVIDER: keyof typeof PROVIDERS = "duckduckgo";
+const LOGO_PROVIDER: keyof typeof PROVIDERS = "google";
 
 // Nigerian and African companies a generic name-to-domain guess gets wrong,
 // plus the global employers that show up most often.
