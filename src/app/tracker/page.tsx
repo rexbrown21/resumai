@@ -6,6 +6,7 @@ import { COLORS, APP_STATUSES, STATUS_COLORS } from "@/lib/constants";
 import { Application } from "@/types";
 import { supabase } from "@/lib/supabase";
 import AuthGuard from "@/components/AuthGuard";
+import { CompanyLogo } from "@/lib/companyLogo";
 
 export default function Tracker() {
   const router = useRouter();
@@ -94,6 +95,7 @@ export default function Tracker() {
                 background: STATUS_COLORS[app.status] || COLORS.textMuted,
                 boxShadow: `0 0 8px ${STATUS_COLORS[app.status] || COLORS.textMuted}44`,
               }} />
+              <CompanyLogo company={app.company} size={32} />
               <div>
                 <div style={{ fontWeight: 700, fontSize: 15, color: COLORS.text }}>{app.company}</div>
                 <div className="mono" style={{ color: COLORS.textMuted, fontSize: 12, marginTop: 2 }}>{app.role}</div>
